@@ -18,6 +18,7 @@
  */
 package ch.njol.skript.hooks.chat.expressions;
 
+import io.skriptlang.skript.chat.util.ComponentHandler;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
@@ -59,7 +60,7 @@ public class ExprPrefixSuffix extends SimplePropertyExpression<Player, String> {
 	
 	@Override
 	public String convert(final Player p) {
-		return Utils.replaceChatStyles(prefix ? "" + VaultHook.chat.getPlayerPrefix(p) : "" + VaultHook.chat.getPlayerSuffix(p));
+		return ComponentHandler.toLegacyString(prefix ? "" + VaultHook.chat.getPlayerPrefix(p) : "" + VaultHook.chat.getPlayerSuffix(p));
 	}
 	
 	@Override

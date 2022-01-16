@@ -511,7 +511,9 @@ public abstract class Utils {
 	 * 
 	 * @param message
 	 * @return message with localised chat styles converted to Minecraft's format
+	 * @deprecated Use {@link io.skriptlang.skript.chat.util.ComponentHandler#toLegacyString(String)}
 	 */
+	@Deprecated
 	public static String replaceChatStyles(final String message) {
 		if (message.isEmpty())
 			return message;
@@ -549,6 +551,7 @@ public abstract class Utils {
 	 * 
 	 * @param message
 	 * @return message with english chat styles converted to Minecraft's format
+	 * @deprecated Use {@link io.skriptlang.skript.chat.util.ComponentHandler#toLegacyString(String)}
 	 */
 	public static String replaceEnglishChatStyles(final String message) {
 		if (message.isEmpty())

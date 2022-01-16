@@ -20,24 +20,21 @@ package ch.njol.skript.lang;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.classes.Changer.ChangeMode;
-import ch.njol.skript.expressions.ExprColoured;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.lang.parser.ParserInstance;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.skript.log.BlockingLogHandler;
 import ch.njol.skript.log.RetainingLogHandler;
 import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.StringMode;
-import ch.njol.skript.util.Utils;
-import ch.njol.skript.util.chat.ChatMessages;
-import ch.njol.skript.util.chat.MessageComponent;
 import ch.njol.util.Checker;
 import ch.njol.util.Kleenean;
 import ch.njol.util.StringUtils;
 import ch.njol.util.coll.CollectionUtils;
 import ch.njol.util.coll.iterator.SingleItemIterator;
-import org.bukkit.ChatColor;
+import io.skriptlang.skript.chat.elements.ExprColoured;
+import io.skriptlang.skript.chat.util.ComponentHandler;
+import net.kyori.adventure.text.Component;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -57,20 +54,16 @@ public class VariableString implements Expression<String> {
 	
 	@Nullable
 	private final Object[] string;
-	@Nullable
-	private Object[] stringUnformatted;
-	private final boolean isSimple;
+
 	@Nullable
 	private final String simple;
 	@Nullable
-	private final String simpleUnformatted;
+	private final Component simpleComponent;
+	@Nullable
+	private final String simpleResolved;
+
+	private final boolean isSimple;
 	private final StringMode mode;
-	
-	/**
-	 * Message components that this string consists of. Only simple parts have
-	 * been evaluated here.
-	 */
-	private final MessageComponent[] components;
 
 	/**
 	 * Creates a new VariableString which does not contain variables.
@@ -78,14 +71,13 @@ public class VariableString implements Expression<String> {
 	 */
 	private VariableString(String s) {
 		isSimple = true;
-		simpleUnformatted = s.replace("%%", "%"); // This doesn't contain variables, so this wasn't done in newInstance!
-		simple = Utils.replaceChatStyles(simpleUnformatted);
+		simple = s.replace("%%", "%"); // This doesn't contain variables, so this wasn't done in newInstance!
+		simpleComponent = ComponentHandler.parse(s);
+		simpleResolved = ComponentHandler.toLegacyString(simpleComponent);
 				
 		orig = simple;
 		string = null;
 		mode = StringMode.MESSAGE;
-		
-		components = new MessageComponent[] {ChatMessages.plainText(simpleUnformatted)};
 	}
 	
 	/**
@@ -96,31 +88,15 @@ public class VariableString implements Expression<String> {
 	 */
 	private VariableString(String orig, Object[] string, StringMode mode) {
 		this.orig = orig;
-		this.string = new Object[string.length];
-		this.stringUnformatted = new Object[string.length];
-		
-		// Construct unformatted string and components
-		List<MessageComponent> components = new ArrayList<>(string.length);
-		for (int i = 0; i < string.length; i++) {
-			Object o = string[i];
-			if (o instanceof String) {
-				this.string[i] = Utils.replaceChatStyles((String) o);
-				components.addAll(ChatMessages.parse((String) o));
-			} else {
-				this.string[i] = o;
-				components.add(null); // Not known parse-time
-			}
-			
-			// For unformatted string, don't format stuff
-			this.stringUnformatted[i] = o;
-		}
-		this.components = components.toArray(new MessageComponent[0]);
+
+		this.string = string;
 		
 		this.mode = mode;
 		
 		isSimple = false;
 		simple = null;
-		simpleUnformatted = null;
+		simpleComponent = null;
+		simpleResolved = null;
 	}
 	
 	/**
@@ -351,14 +327,34 @@ public class VariableString implements Expression<String> {
 	/**
 	 * Parses all expressions in the string and returns it.
 	 * If this is a simple string, the event may be null.
+	 *
+	 * Simple formatting (colors) will be processed.
 	 * 
 	 * @param e Event to pass to the expressions.
 	 * @return The input string with all expressions replaced.
+	 * @see #toString(boolean, Event)
 	 */
 	public String toString(@Nullable Event e) {
+		return toString(true, e);
+	}
+
+	/**
+	 * Parses all expressions in the string and returns it.
+	 * If this is a simple string, the event may be null.
+	 *
+	 * @param format Whether simple formatting (colors) should be processed.
+	 * @param e Event to pass to the expressions.
+	 * @return The input string with all expressions replaced.
+	 */
+	public String toString(boolean format, @Nullable Event e) {
 		if (isSimple) {
-			assert simple != null;
-			return simple;
+			if (format) {
+				assert simpleResolved != null;
+				return simpleResolved;
+			} else {
+				assert simple != null;
+				return simple;
+			}
 		}
 
 		if (e == null) {
@@ -370,138 +366,17 @@ public class VariableString implements Expression<String> {
 		StringBuilder b = new StringBuilder();
 		for (Object o : string) {
 			if (o instanceof Expression<?>) {
+				boolean escape = !(o instanceof ExprColoured) && format;
+				if (escape)
+					b.append("<pre>");
 				b.append(Classes.toString(((Expression<?>) o).getArray(e), true, mode));
+				if (escape)
+					b.append("</pre>");
 			} else {
 				b.append(o);
 			}
 		}
-		return b.toString();
-	}
-	
-	/**
-	 * Parses all expressions in the string and returns it.
-	 * Does not parse formatting codes!
-	 * @param e Event to pass to the expressions.
-	 * @return The input string with all expressions replaced.
-	 */
-	public String toUnformattedString(Event e) {
-		if (isSimple) {
-			assert simpleUnformatted != null;
-			return simpleUnformatted;
-		}
-		Object[] string = this.stringUnformatted;
-		assert string != null;
-		StringBuilder b = new StringBuilder();
-		for (Object o : string) {
-			if (o instanceof Expression<?>) {
-				b.append(Classes.toString(((Expression<?>) o).getArray(e), true, mode));
-			} else {
-				b.append(o);
-			}
-		}
-		return b.toString();
-	}
-	
-	/**
-	 * Gets message components from this string. Formatting is parsed only
-	 * in simple parts for security reasons.
-	 * @param e Currently running event.
-	 * @return Message components.
-	 */
-	public List<MessageComponent> getMessageComponents(Event e) {
-		if (isSimple) { // Trusted, constant string in a script
-			assert simpleUnformatted != null;
-			return ChatMessages.parse(simpleUnformatted);
-		}
-		
-		// Parse formating
-		Object[] string = this.stringUnformatted;
-		assert string != null;
-		List<MessageComponent> message = new ArrayList<>(components.length); // At least this much space
-		int stringPart = -1;
-		MessageComponent previous = null;
-		for (MessageComponent component : components) {
-			if (component == null) { // This component holds place for variable part
-				// Go over previous expression part (stringPart >= 0) or take first part (stringPart == 0)
-				stringPart++;
-				if (previous != null) { // Also jump over literal part
-					stringPart++;
-				}
-				Object o = string[stringPart];
-				previous = null;
-				
-				// Convert it to plain text
-				String text = null;
-				if (o instanceof ExprColoured && ((ExprColoured) o).isUnsafeFormat()) { // Special case: user wants to process formatting
-					String unformatted = Classes.toString(((ExprColoured) o).getArray(e), true, mode);
-					if (unformatted != null) {
-						message.addAll(ChatMessages.parse(unformatted));
-					}
-					continue;
-				} else if (o instanceof Expression<?>) {
-					text = Classes.toString(((Expression<?>) o).getArray(e), true, mode);
-				}
-				
-				assert text != null;
-				List<MessageComponent> components = ChatMessages.fromParsedString(text);
-				if (!message.isEmpty()) { // Copy styles from previous component
-					int startSize = message.size();
-					for (int i = 0; i < components.size(); i++) {
-						MessageComponent plain = components.get(i);
-						ChatMessages.copyStyles(message.get(startSize + i - 1), plain);
-						message.add(plain);
-					}
-				} else {
-					message.addAll(components);
-				}
-			} else {
-				MessageComponent componentCopy = component.copy();
-				if (!message.isEmpty()) { // Copy styles from previous component
-					ChatMessages.copyStyles(message.get(message.size() - 1), componentCopy);
-				}
-				message.add(componentCopy);
-				previous = componentCopy;
-			}
-		}
-		
-		return message;
-	}
-	
-	/**
-	 * Gets message components from this string. Formatting is parsed
-	 * everywhere, which is a potential security risk.
-	 * @param e Currently running event.
-	 * @return Message components.
-	 */
-	public List<MessageComponent> getMessageComponentsUnsafe(Event e) {
-		if (isSimple) { // Trusted, constant string in a script
-			assert simpleUnformatted != null;
-			return ChatMessages.parse(simpleUnformatted);
-		}
-		
-		return ChatMessages.parse(toUnformattedString(e));
-	}
-	
-	/**
-	 * Parses all expressions in the string and returns it in chat JSON format.
-	 * 
-	 * @param e Event to pass to the expressions.
-	 * @return The input string with all expressions replaced.
-	 */
-	public String toChatString(Event e) {
-		return ChatMessages.toJson(getMessageComponents(e));
-	}
-	
-	@Nullable
-	private static ChatColor getLastColor(CharSequence s) {
-		for (int i = s.length() - 2; i >= 0; i--) {
-			if (s.charAt(i) == ChatColor.COLOR_CHAR) {
-				ChatColor c = ChatColor.getByChar(s.charAt(i + 1));
-				if (c != null && (c.isColor() || c == ChatColor.RESET))
-					return c;
-			}
-		}
-		return null;
+		return format ? ComponentHandler.toLegacyString(b.toString()) : b.toString();
 	}
 	
 	@Override
@@ -530,6 +405,18 @@ public class VariableString implements Expression<String> {
 		}
 		b.append('"');
 		return b.toString();
+	}
+
+	public Component getAsComponent(@Nullable Event e) {
+		if (isSimple) {
+			assert simpleComponent != null;
+			return simpleComponent;
+		}
+
+		if (e == null)
+			throw new IllegalArgumentException("Event may not be null in non-simple VariableStrings!");
+
+		return ComponentHandler.parse(toString(false, e));
 	}
 	
 	public String getDefaultVariableName() {
@@ -610,13 +497,40 @@ public class VariableString implements Expression<String> {
 	public boolean check(Event e, Checker<? super String> c) {
 		return SimpleExpression.check(getAll(e), c, false, false);
 	}
-	
-	@SuppressWarnings("unchecked")
+
 	@Override
 	@Nullable
+	@SuppressWarnings("unchecked")
 	public <R> Expression<? extends R> getConvertedExpression(Class<R>... to) {
 		if (CollectionUtils.containsSuperclass(to, String.class))
 			return (Expression<? extends R>) this;
+		if (CollectionUtils.containsSuperclass(to, Component.class))
+			return new SimpleExpression<R>() {
+				@Override
+				public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
+					throw new UnsupportedOperationException();
+				}
+
+				@Override
+				protected @Nullable R[] get(Event e) {
+					return (R[]) new Component[]{getAsComponent(e)};
+				}
+
+				@Override
+				public boolean isSingle() {
+					return true;
+				}
+
+				@Override
+				public Class<? extends R> getReturnType() {
+					return (Class<? extends R>) Component.class;
+				}
+
+				@Override
+				public String toString(@Nullable Event e, boolean debug) {
+					return VariableString.this.toString(e, debug);
+				}
+			};
 		return null;
 	}
 	

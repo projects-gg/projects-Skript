@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.skriptlang.skript.chat.util.ComponentHandler;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.Skript;
@@ -141,7 +142,7 @@ public class FlatFileStorage extends VariablesStorage {
 						continue;
 					}
 					if (d instanceof String && update2_0_beta3) {
-						d = Utils.replaceChatStyles((String) d);
+						d = ComponentHandler.toLegacyString((String) d);
 					}
 					Variables.variableLoaded("" + split[0], d, this);
 				}

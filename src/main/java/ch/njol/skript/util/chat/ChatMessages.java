@@ -592,4 +592,5 @@ public class ChatMessages {
 		assert plain != null;
 		return plain;
 	}
+
 }

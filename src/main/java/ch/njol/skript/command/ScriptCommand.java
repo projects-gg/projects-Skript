@@ -32,6 +32,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
+import io.skriptlang.skript.chat.util.ComponentHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -69,9 +70,6 @@ import ch.njol.skript.log.Verbosity;
 import ch.njol.skript.util.Date;
 import ch.njol.skript.util.EmptyStacktraceException;
 import ch.njol.skript.util.Timespan;
-import ch.njol.skript.util.Utils;
-import ch.njol.skript.util.chat.BungeeConverter;
-import ch.njol.skript.util.chat.MessageComponent;
 import ch.njol.skript.variables.Variables;
 import ch.njol.util.StringUtils;
 import ch.njol.util.Validate;
@@ -153,8 +151,8 @@ public class ScriptCommand implements TabExecutor {
 		this.aliases = aliases;
 		activeAliases = new ArrayList<>(aliases);
 
-		this.description = Utils.replaceEnglishChatStyles(description);
-		this.usage = Utils.replaceEnglishChatStyles(usage);
+		this.description = ComponentHandler.toLegacyString(description);
+		this.usage = ComponentHandler.toLegacyString(usage);
 
 		this.executableBy = executableBy;
 
@@ -211,13 +209,7 @@ public class ScriptCommand implements TabExecutor {
 		final ScriptCommandEvent event = new ScriptCommandEvent(ScriptCommand.this, sender);
 
 		if (!permission.isEmpty() && !sender.hasPermission(permission)) {
-			if (sender instanceof Player) {
-				List<MessageComponent> components =
-						permissionMessage.getMessageComponents(event);
-				((Player) sender).spigot().sendMessage(BungeeConverter.convert(components));
-			} else {
-				sender.sendMessage(permissionMessage.getSingle(event));
-			}
+			ComponentHandler.audienceFrom(sender).sendMessage(ComponentHandler.parseFromSingleExpression(event, permissionMessage));
 			return false;
 		}
 

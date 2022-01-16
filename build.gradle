@@ -29,6 +29,9 @@ allprojects {
 dependencies {
 	shadow group: 'io.papermc', name: 'paperlib', version: '1.0.6'
 	implementation group: 'io.papermc.paper', name: 'paper-api', version: '1.17.1-R0.1-SNAPSHOT'
+	shadow group: 'net.kyori', name: 'adventure-platform-bukkit', version: '4.0.2-SNAPSHOT'
+	shadow group: 'net.kyori', name: 'adventure-text-serializer-plain', version: '4.10.0-SNAPSHOT'
+	shadow group: 'net.kyori', name: 'adventure-text-minimessage', version: '4.10.0-SNAPSHOT'
 	implementation group: 'org.eclipse.jdt', name: 'org.eclipse.jdt.annotation', version: '2.2.600'
 	implementation group: 'com.google.code.findbugs', name: 'findbugs', version: '3.0.1'
 	implementation group: 'com.sk89q.worldguard', name: 'worldguard-legacy', version: '7.0.0-SNAPSHOT'
@@ -76,10 +79,8 @@ tasks.withType(ShadowJar) {
 	configurations = [
 		project.configurations.shadow
 	]
-	dependencies {
-		include(dependency('io.papermc:paperlib'))
-	}
 	relocate 'io.papermc.lib', 'ch.njol.skript.paperlib'
+	relocate 'net.kyori', 'ch.njol.skript.kyori'
 	manifest {
 		attributes(
 			'Name': 'ch/njol/skript',

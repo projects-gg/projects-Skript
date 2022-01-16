@@ -29,9 +29,9 @@ import ch.njol.skript.lang.util.SimpleLiteral;
 import ch.njol.skript.localization.Message;
 import ch.njol.skript.localization.RegexMessage;
 import ch.njol.skript.registrations.Classes;
-import ch.njol.skript.util.Utils;
 import ch.njol.util.StringUtils;
 import ch.njol.yggdrasil.Fields;
+import io.skriptlang.skript.chat.util.ComponentHandler;
 import org.eclipse.jdt.annotation.Nullable;
 
 import java.util.regex.Pattern;
@@ -573,7 +573,7 @@ public class JavaClasses {
 							case SCRIPT:
 							case EVENT:
 								if (VariableString.isQuotedCorrectly(s, true))
-									return Utils.replaceChatStyles("" + s.substring(1, s.length() - 1).replace("\"\"", "\""));
+									return ComponentHandler.toLegacyString("" + s.substring(1, s.length() - 1).replace("\"\"", "\""));
 								return null;
 							case COMMAND:
 								return s;
