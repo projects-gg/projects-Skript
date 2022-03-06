@@ -573,7 +573,7 @@ public class JavaClasses {
 							case SCRIPT:
 							case EVENT:
 								if (VariableString.isQuotedCorrectly(s, true))
-									return ComponentHandler.toLegacyString("" + s.substring(1, s.length() - 1).replace("\"\"", "\""));
+									return ComponentHandler.toLegacyString("" + s.substring(1, s.length() - 1).replace("\"\"", "\""), false);
 								return null;
 							case COMMAND:
 								return s;

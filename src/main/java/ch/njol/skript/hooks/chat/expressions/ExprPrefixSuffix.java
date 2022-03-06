@@ -60,7 +60,7 @@ public class ExprPrefixSuffix extends SimplePropertyExpression<Player, String> {
 	
 	@Override
 	public String convert(final Player p) {
-		return ComponentHandler.toLegacyString(prefix ? "" + VaultHook.chat.getPlayerPrefix(p) : "" + VaultHook.chat.getPlayerSuffix(p));
+		return ComponentHandler.toLegacyString(prefix ? "" + VaultHook.chat.getPlayerPrefix(p) : "" + VaultHook.chat.getPlayerSuffix(p), false);
 	}
 	
 	@Override

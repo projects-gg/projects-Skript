@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import io.skriptlang.skript.chat.util.ComponentHandler;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -88,14 +89,14 @@ public class ScriptCommand implements TabExecutor {
 	private List<String> activeAliases;
 	private String permission;
 	private final VariableString permissionMessage;
-	private final String description;
+	private final Component description;
 	@Nullable
 	private final Timespan cooldown;
 	private final Expression<String> cooldownMessage;
 	private final String cooldownBypass;
 	@Nullable
 	private final Expression<String> cooldownStorage;
-	final String usage;
+	private final Component usage;
 
 	final Trigger trigger;
 
@@ -151,8 +152,8 @@ public class ScriptCommand implements TabExecutor {
 		this.aliases = aliases;
 		activeAliases = new ArrayList<>(aliases);
 
-		this.description = ComponentHandler.toLegacyString(description);
-		this.usage = ComponentHandler.toLegacyString(usage);
+		this.description = ComponentHandler.parse(description);
+		this.usage = ComponentHandler.parse(usage);
 
 		this.executableBy = executableBy;
 
@@ -161,24 +162,20 @@ public class ScriptCommand implements TabExecutor {
 
 		trigger = new Trigger(script, "command /" + name, new SimpleEvent(), items);
 
-		bukkitCommand = setupBukkitCommand();
-	}
-
-	private PluginCommand setupBukkitCommand() {
 		try {
-			final Constructor<PluginCommand> c = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);
+			Constructor<PluginCommand> c = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);
 			c.setAccessible(true);
-			final PluginCommand bukkitCommand = c.newInstance(name, Skript.getInstance());
-			bukkitCommand.setAliases(aliases);
+			PluginCommand bukkitCommand = c.newInstance(name, Skript.getInstance());
+			bukkitCommand.setAliases(this.aliases);
 			bukkitCommand.setDescription(description);
-			bukkitCommand.setLabel(label);
-			bukkitCommand.setPermission(permission);
+			bukkitCommand.setLabel(this.label);
+			bukkitCommand.setPermission(this.permission);
 			// We can only set the message if it's simple (doesn't contains expressions)
-			if (permissionMessage.isSimple())
-				bukkitCommand.setPermissionMessage(permissionMessage.toString(null));
+			if (this.permissionMessage.isSimple())
+				bukkitCommand.setPermissionMessage(this.permissionMessage.toString(null));
 			bukkitCommand.setUsage(usage);
 			bukkitCommand.setExecutor(this);
-			return bukkitCommand;
+			this.bukkitCommand = bukkitCommand;
 		} catch (final Exception e) {
 			Skript.outdatedError(e);
 			throw new EmptyStacktraceException();
@@ -283,7 +280,7 @@ public class ScriptCommand implements TabExecutor {
 	}
 
 	public void sendHelp(final CommandSender sender) {
-		if (!description.isEmpty())
+		if (!Component.IS_NOT_EMPTY.test(description))
 			sender.sendMessage(description);
 		sender.sendMessage(ChatColor.GOLD + "Usage" + ChatColor.RESET + ": " + usage);
 	}

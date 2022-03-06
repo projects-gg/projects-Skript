@@ -56,6 +56,8 @@ import java.util.zip.ZipFile;
 import ch.njol.skript.lang.Section;
 import io.skriptlang.skript.chat.ChatRegistration;
 import io.skriptlang.skript.chat.util.ComponentHandler;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -1755,6 +1757,7 @@ public final class Skript extends JavaPlugin implements Listener {
 	}
 	
 	public static String SKRIPT_PREFIX = ChatColor.GRAY + "[" + ChatColor.GOLD + "Skript" + ChatColor.GRAY + "]" + ChatColor.RESET + " ";
+	public static Component SKRIPT_PREFIX_COMPONENT = ComponentHandler.parse("<gray>[<gold>Skript<gray>]<reset> ");
 	
 //	static {
 //		Language.addListener(new LanguageChangeListener() {
@@ -1768,7 +1771,7 @@ public final class Skript extends JavaPlugin implements Listener {
 //	}
 	
 	public static void info(final CommandSender sender, final String info) {
-		sender.sendMessage(SKRIPT_PREFIX + ComponentHandler.toLegacyString(info));
+		ComponentHandler.audienceFrom(sender).sendMessage(SKRIPT_PREFIX_COMPONENT.append(ComponentHandler.parse(info)));
 	}
 	
 	/**
@@ -1777,11 +1780,11 @@ public final class Skript extends JavaPlugin implements Listener {
 	 * @see #adminBroadcast(String)
 	 */
 	public static void broadcast(final String message, final String permission) {
-		Bukkit.broadcast(SKRIPT_PREFIX + ComponentHandler.toLegacyString(message), permission);
+		Bukkit.broadcast(SKRIPT_PREFIX + ComponentHandler.toLegacyString(message, false), permission);
 	}
 	
 	public static void adminBroadcast(final String message) {
-		Bukkit.broadcast(SKRIPT_PREFIX + ComponentHandler.toLegacyString(message), "skript.admin");
+		Bukkit.broadcast(SKRIPT_PREFIX + ComponentHandler.toLegacyString(message, false), "skript.admin");
 	}
 	
 	/**
@@ -1791,11 +1794,11 @@ public final class Skript extends JavaPlugin implements Listener {
 	 * @param info
 	 */
 	public static void message(final CommandSender sender, final String info) {
-		sender.sendMessage(ComponentHandler.toLegacyString(info));
+		ComponentHandler.audienceFrom(sender).sendMessage(ComponentHandler.parse(info));
 	}
 	
 	public static void error(final CommandSender sender, final String error) {
-		sender.sendMessage(SKRIPT_PREFIX + ChatColor.DARK_RED + ComponentHandler.toLegacyString(error));
+		ComponentHandler.audienceFrom(sender).sendMessage(SKRIPT_PREFIX_COMPONENT.append(ComponentHandler.parse(error).color(NamedTextColor.DARK_RED)));
 	}
 	
 	/**

@@ -142,7 +142,7 @@ public class FlatFileStorage extends VariablesStorage {
 						continue;
 					}
 					if (d instanceof String && update2_0_beta3) {
-						d = ComponentHandler.toLegacyString((String) d);
+						d = ComponentHandler.toLegacyString((String) d, false);
 					}
 					Variables.variableLoaded("" + split[0], d, this);
 				}

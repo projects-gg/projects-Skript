@@ -26,8 +26,13 @@ import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.registrations.Converters;
 import io.skriptlang.skript.chat.util.ComponentHandler;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.tag.Tag;
+import net.kyori.adventure.text.minimessage.tag.Tag.Argument;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.apache.commons.lang.StringEscapeUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import static io.skriptlang.skript.chat.util.ComponentHandler.registerPlaceholder;
 
@@ -71,58 +76,44 @@ public class ChatRegistration {
 
 		registerPlaceholder("dark_cyan", "<dark_aqua>");
 		registerPlaceholder("dark_turquoise", "<dark_aqua>");
-		registerPlaceholder("dark cyan", "<dark_aqua>");
-		registerPlaceholder("dark turquoise", "<dark_aqua>");
 		registerPlaceholder("cyan", "<dark_aqua>");
 
 		registerPlaceholder("purple", "<dark_purple>");
 
 		registerPlaceholder("dark_yellow", "<gold>");
-		registerPlaceholder("dark yellow", "<gold>");
 		registerPlaceholder("orange", "<gold>");
 
 		registerPlaceholder("light_grey", "<grey>");
 		registerPlaceholder("light_gray", "<grey>");
-		registerPlaceholder("light grey", "<grey>");
-		registerPlaceholder("light gray", "<grey>");
 		registerPlaceholder("silver", "<grey>");
 
 		registerPlaceholder("dark_silver", "<dark_grey>");
-		registerPlaceholder("dark silver", "<dark_grey>");
 
 		registerPlaceholder("light_blue", "<blue>");
-		registerPlaceholder("light blue", "<blue>");
 		registerPlaceholder("indigo", "<blue>");
 
 		registerPlaceholder("light_green", "<green>");
 		registerPlaceholder("lime_green", "<green>");
-		registerPlaceholder("light green", "<green>");
-		registerPlaceholder("lime green", "<green>");
 		registerPlaceholder("lime", "<green>");
 
 		registerPlaceholder("light_cyan", "<aqua>");
 		registerPlaceholder("light_aqua", "<aqua>");
-		registerPlaceholder("light cyan", "<aqua>");
-		registerPlaceholder("light aqua", "<aqua>");
 		registerPlaceholder("turquoise", "<aqua>");
 
 		registerPlaceholder("light_red", "<red>");
-		registerPlaceholder("light red", "<red>");
+
 
 		registerPlaceholder("pink", "<light_purple>");
 		registerPlaceholder("magenta", "<light_purple>");
 
 		registerPlaceholder("light_yellow", "<yellow>");
-		registerPlaceholder("light yellow", "<yellow>");
 
 		registerPlaceholder("underline", "<underlined>");
 
-		registerPlaceholder(tag -> {
-			if (tag.startsWith("unicode:u") && tag.length() == 13) {
-				return Component.text(("\\" + tag.substring(8)).toCharArray()[0]);
-			}
-			return null;
-		});
+		ComponentHandler.registerResolver(TagResolver.resolver("unicode", (argumentQueue, context) -> {
+			String unicode = argumentQueue.popOr("A unicode tag must have an argument of the unicode").value();
+			return Tag.selfClosingInserting(Component.text(StringEscapeUtils.unescapeJava("\\" + unicode)));
+		}));
 
 	}
 

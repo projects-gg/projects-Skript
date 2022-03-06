@@ -26,114 +26,111 @@ import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.platform.bukkit.BukkitComponentSerializer;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.ComponentLike;
+import net.kyori.adventure.text.minimessage.Context;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.placeholder.PlaceholderResolver;
-import net.kyori.adventure.text.minimessage.placeholder.Replacement;
-import net.kyori.adventure.text.minimessage.transformation.TransformationRegistry;
-import net.kyori.adventure.text.minimessage.transformation.TransformationType;
+import net.kyori.adventure.text.minimessage.ParsingException;
+import net.kyori.adventure.text.minimessage.tag.Tag;
+import net.kyori.adventure.text.minimessage.tag.resolver.ArgumentQueue;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.minimessage.tag.standard.StandardTags;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 public class ComponentHandler {
 
-	private static final Map<String, Replacement<?>> PLACEHOLDERS = new HashMap<>();
+	private static final Map<String, Tag> SIMPLE_PLACEHOLDERS = new HashMap<>();
+	private static final List<TagResolver> RESOLVERS = new ArrayList<>();
 
 	/**
 	 * Registers a simple key-value placeholder with Skript's message parsers.
-	 * See https://docs.adventure.kyori.net/minimessage.html#placeholder for details.
-	 * @param tag The tag to be replaced.
-	 * @param result The output to replace the input.
-	 * @see #registerPlaceholder(Function)
+	 * @param tag The name/key of the placeholder.
+	 * @param result The result/value of the placeholder.
 	 */
 	public static void registerPlaceholder(String tag, String result) {
-		PLACEHOLDERS.put(tag, Replacement.raw(result));
+		SIMPLE_PLACEHOLDERS.put(tag, Tag.preProcessParsed(result));
 	}
 
 	/**
-	 * Unregisters a tag from Skript's message parsers.
-	 * @param tag The tag to unregister.
+	 * Unregisters a simple key-value placeholder from Skript's message parsers.
+	 * @param tag The name of the placeholder to unregister.
 	 */
 	public static void unregisterPlaceholder(String tag) {
-		PLACEHOLDERS.remove(tag);
-	}
-
-	private static final List<Function<String, ComponentLike>> PLACEHOLDER_RESOLVERS = new ArrayList<>();
-
-	/**
-	 * Registers a resolver with Skript's message parsers.
-	 * See https://docs.adventure.kyori.net/minimessage.html#placeholder-resolver for details.
-	 * @param resolver The resolver to register.
-	 */
-	public static void registerPlaceholder(Function<String, ComponentLike> resolver) {
-		PLACEHOLDER_RESOLVERS.add(resolver);
+		SIMPLE_PLACEHOLDERS.remove(tag);
 	}
 
 	/**
-	 * Unregisters a resolver from Skript's message parsers.
-	 * @param resolver The resolver to unregister.
+	 * Registers a TagResolver with Skript's message parsers.
+	 * @param resolver The TagResolver to register.
 	 */
-	public static void unregisterPlaceholder(Function<String, ComponentLike> resolver) {
-		PLACEHOLDER_RESOLVERS.remove(resolver);
+	public static void registerResolver(TagResolver resolver) {
+		RESOLVERS.add(resolver);
 	}
+
+	/**
+	 * Unregisters a TagResolver from Skript's message parsers.
+	 * @param resolver The TagResolver to unregister.
+	 */
+	public static void unregisterResolver(TagResolver resolver) {
+		RESOLVERS.remove(resolver);
+	}
+
+	private static final TagResolver SKRIPT_TAG_RESOLVER = new TagResolver() {
+		@Override
+		@Nullable
+		public Tag resolve(@NotNull String name, @NotNull ArgumentQueue arguments, @NotNull Context ctx) throws ParsingException {
+			Tag simple = SIMPLE_PLACEHOLDERS.get(name);
+			if (simple != null)
+				return simple;
+			for (TagResolver resolver : RESOLVERS) {
+				Tag resolved = resolver.resolve(name, arguments, ctx);
+				if (resolved != null)
+					return resolved;
+			}
+			return null;
+		}
+
+		@Override
+		public boolean has(@NotNull String name) {
+			if (SIMPLE_PLACEHOLDERS.containsKey(name))
+				return true;
+			for (TagResolver resolver : RESOLVERS) {
+				if (resolver.has(name))
+					return true;
+			}
+			return false;
+		}
+	};
 
 	// The normal parser will process any proper tags
 	private static final MiniMessage parser = MiniMessage.builder()
-		.parsingErrorMessageConsumer(list -> {
-			// Do nothing - this is to avoid errors being printed to console for malformed formatting
-		})
-		.placeholderResolver(PlaceholderResolver.builder()
-			.dynamic(tag -> {
-				Replacement<?> simpleReplacement = PLACEHOLDERS.get(tag);
-				if (simpleReplacement != null)
-					return simpleReplacement;
-
-				for (Function<String, ComponentLike> resolver : PLACEHOLDER_RESOLVERS) {
-					ComponentLike result = resolver.apply(tag);
-					if (result != null)
-						return Replacement.component(result);
-				}
-				return null;
-			})
+		.strict(false)
+		.tags(TagResolver.builder()
+			.resolver(StandardTags.defaults())
+			.resolver(SKRIPT_TAG_RESOLVER)
 			.build()
 		)
 		.build();
 
 	// The safe parser only parses color/decoration/formatting related tags
-	@SuppressWarnings("unchecked")
 	private static final MiniMessage safeParser = MiniMessage.builder()
-		.parsingErrorMessageConsumer(list -> {
-			// Do nothing - this is to avoid errors being printed to console for malformed formatting
-		})
-		.placeholderResolver(PlaceholderResolver.builder()
-			.dynamic(tag -> {
-				Replacement<?> simpleReplacement = PLACEHOLDERS.get(tag);
-				if (simpleReplacement != null)
-					return simpleReplacement;
-
-				for (Function<String, ComponentLike> resolver : PLACEHOLDER_RESOLVERS) {
-					ComponentLike result = resolver.apply(tag);
-					if (result != null)
-						return Replacement.component(result);
-				}
-				return null;
-			})
+		.strict(false)
+		.tags(TagResolver.builder()
+			.resolvers(
+				StandardTags.color(), StandardTags.decorations(), StandardTags.font(),
+				StandardTags.gradient(), StandardTags.rainbow(), StandardTags.newline(),
+				StandardTags.reset(), StandardTags.transition()
+			)
+			.resolver(SKRIPT_TAG_RESOLVER)
 			.build()
-		)
-		.transformations(
-			TransformationRegistry.builder().clear().add(
-				TransformationType.COLOR, TransformationType.DECORATION, TransformationType.RAINBOW,
-				TransformationType.GRADIENT, TransformationType.FONT
-			).build()
 		)
 		.build();
 
@@ -155,7 +152,10 @@ public class ComponentHandler {
 	 */
 	public static Component parse(Object message, boolean safe) {
 		String realMessage = message instanceof String ? (String) message : Classes.toString(message);
-		System.out.println("CALLED: " + realMessage);
+
+		if (realMessage.isEmpty()) {
+			return Component.empty();
+		}
 
 		if (realMessage.contains("&") || realMessage.contains("§")) {
 			System.out.println("CALLED LEGACY PARSING");
@@ -188,6 +188,21 @@ public class ComponentHandler {
 			realMessage = reconstructedMessage.toString();
 			System.out.println("FINISHED LEGACY PARSING: " + (1. * (System.nanoTime() - start) / 1000000.));
 		}
+
+		// Really annoying backwards compatibility check
+		realMessage = realMessage.replace("<dark cyan>", "<dark_aqua>")
+			.replace("<dark turquoise>", "<dark_aqua>")
+			.replace("<dark yellow>", "<gold>")
+			.replace("<light grey>", "<grey>")
+			.replace("<light gray>", "<grey>")
+			.replace("<dark silver>", "<dark_grey>")
+			.replace("<light blue>", "<blue>")
+			.replace("<light green>", "<green>")
+			.replace("<lime green>", "<green>")
+			.replace("<light cyan>", "<aqua>")
+			.replace("<light aqua>", "<aqua>")
+			.replace("<light red>", "<red>")
+			.replace("<light yellow>", "<yellow>");
 
 		return safe ? safeParser.deserialize(realMessage) : parser.deserialize(realMessage);
 	}
@@ -249,11 +264,19 @@ public class ComponentHandler {
 	}
 
 	/**
+	 * Escapes all tags known to Skript in the given string.
+	 * @param string The string to escape tags in.
+	 * @return The string with tags escaped.
+	 */
+	public static String escape(String string) {
+		return parser.escapeTags(string);
+	}
+
+	/**
 	 * Strips all formatting from a string.
 	 * @param string The string to strip formatting from.
-	 * @param all Whether ALL formatting should be stripped.
-	 *            If true, tags like keybinds will also be converted into their plain text form.
-	 *            If false, they will be left unparsed.
+	 * @param all Whether ALL formatting/tags should be stripped.
+	 *            If false, only safe tags like colors and decorations will be stripped.
 	 * @return The stripped string.
 	 */
 	public static String stripFormatting(String string, boolean all) {
@@ -272,20 +295,12 @@ public class ComponentHandler {
 	/**
 	 * Converts a string into a legacy formatted string.
 	 * @param string The string to convert.
+	 * @param all Whether ALL formatting/tags should be converted to a legacy format.
+	 *            If false, only safe tags like colors and decorations will be converted.
 	 * @return The legacy string.
 	 */
-	public static String toLegacyString(String string) {
-		return toLegacyString(string, false);
-	}
-
-	/**
-	 * Converts a string into a legacy formatted string.
-	 * @param string The string to convert.
-	 * @param processFormatting Whether formatting should be processed before conversion.
-	 * @return The legacy string.
-	 */
-	public static String toLegacyString(String string, boolean processFormatting) {
-		return toLegacyString(parse(string, !processFormatting));
+	public static String toLegacyString(String string, boolean all) {
+		return toLegacyString(parse(string, !all));
 	}
 
 	/**
@@ -297,6 +312,7 @@ public class ComponentHandler {
 		return BukkitComponentSerializer.legacy().serialize(component);
 	}
 
+	@Nullable
 	private static BukkitAudiences adventure = null; // Can't set here as we need an instance of Skript
 
 	public static BukkitAudiences getAdventure() {

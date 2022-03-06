@@ -72,7 +72,7 @@ public class VariableString implements Expression<String> {
 	private VariableString(String s) {
 		isSimple = true;
 		simple = s.replace("%%", "%"); // This doesn't contain variables, so this wasn't done in newInstance!
-		simpleComponent = ComponentHandler.parse(s);
+		simpleComponent = ComponentHandler.parse(s, false);
 		simpleResolved = ComponentHandler.toLegacyString(simpleComponent);
 				
 		orig = simple;
@@ -367,16 +367,15 @@ public class VariableString implements Expression<String> {
 		for (Object o : string) {
 			if (o instanceof Expression<?>) {
 				boolean escape = !(o instanceof ExprColoured) && format;
+				String expression = Classes.toString(((Expression<?>) o).getArray(e), true, mode);
 				if (escape)
-					b.append("<pre>");
-				b.append(Classes.toString(((Expression<?>) o).getArray(e), true, mode));
-				if (escape)
-					b.append("</pre>");
+					ComponentHandler.escape(expression);
+				b.append(expression);
 			} else {
 				b.append(o);
 			}
 		}
-		return format ? ComponentHandler.toLegacyString(b.toString()) : b.toString();
+		return format ? ComponentHandler.toLegacyString(b.toString(), false) : b.toString();
 	}
 	
 	@Override
