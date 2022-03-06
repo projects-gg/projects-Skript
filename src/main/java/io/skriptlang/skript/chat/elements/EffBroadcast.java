@@ -19,6 +19,10 @@
 package io.skriptlang.skript.chat.elements;
 
 import ch.njol.skript.Skript;
+import ch.njol.skript.doc.Description;
+import ch.njol.skript.doc.Examples;
+import ch.njol.skript.doc.Name;
+import ch.njol.skript.doc.Since;
 import ch.njol.skript.lang.Effect;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.ExpressionList;
@@ -36,6 +40,13 @@ import org.eclipse.jdt.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+@Name("Broadcast")
+@Description("Broadcasts a message to the server.")
+@Examples({
+	"broadcast \"Welcome %player% to the server!\"",
+	"broadcast \"Woah! It's a message!\""
+})
+@Since("1.0, 2.6 (broadcasting objects), 2.6.1 (using advanced formatting)")
 public class EffBroadcast extends Effect {
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
