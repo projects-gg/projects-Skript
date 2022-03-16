@@ -1,0 +1,2 @@
+on load:
+	run java test "Java test runs" located in "ch.njol.test.skript.effects.TestEffJavaTest"

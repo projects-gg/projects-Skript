@@ -1,7 +1,8 @@
 {
 	"name": "paper-1.18.1",
 	"resources": [
-		{"source": "server.properties.generic", "target": "server.properties"}
+		{"source": "server.properties.generic", "target": "server.properties"},
+		{"source": "spigot.yml.generic", "target": "spigot.yml"}
 	],
 	"paperDownloads": [
 		{

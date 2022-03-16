@@ -35,6 +35,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 
@@ -186,6 +187,8 @@ public class Environment {
 		try {
 			Files.copy(new File(getClass().getProtectionDomain().getCodeSource().getLocation()
 				.toURI()).toPath(), skript, StandardCopyOption.REPLACE_EXISTING);
+			Files.copy(Paths.get(getClass().getProtectionDomain().getCodeSource().getLocation()
+				.toURI()).getParent().normalize().resolve("Skript-tests.jar"), env.resolve("plugins/Skript-tests.jar"), StandardCopyOption.REPLACE_EXISTING);
 		} catch (URISyntaxException e) {
 			throw new AssertionError(e);
 		}

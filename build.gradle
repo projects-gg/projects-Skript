@@ -159,11 +159,17 @@ tasks.create('testNaming') {
 	}
 }
 
+task testJar(type: Jar) {
+	dependsOn(compileTestJava)
+	archiveName = 'Skript-tests.jar'
+	from 'build/classes/java/test', 'src/test/resources/plugin.yml'
+}
+
 // Create a test task with given name, environments dir/file and is it development mode task
 void createTestTask(String name, String environments, boolean devMode) {
 	tasks.create(name) {
 		// Compile Skript and check test naming
-		dependsOn jar, testNaming
+		dependsOn jar, testClasses, testJar, testNaming
 		doFirst {
 			if (devMode) {
 				standardInput = System.in
