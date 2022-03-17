@@ -84,8 +84,9 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 		else if (item == null)
 			return false;
 
+		ItemType potentiallyAllowedItem = new ItemType(item);
 		for (ItemType type : types) {
-			if (new ItemType(item).isSimilar(type)) {
+			if (potentiallyAllowedItem.isSimilar(type)) {
 				return true;
 			}
 		}
