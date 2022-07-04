@@ -308,9 +308,9 @@ public class SimpleEntityData extends EntityData<Entity> {
 		}
 
 		if (Skript.isRunningMinecraft(1, 19)) {
-			addSimpleEntity("allay", Allay.class);
-			addSimpleEntity("tadpole", Tadpole.class);
-			addSimpleEntity("warden", Warden.class);
+			types.add(new SimpleEntityDataInfo("allay", Allay.class));
+			types.add(new SimpleEntityDataInfo("tadpole", Tadpole.class));
+			types.add(new SimpleEntityDataInfo("warden", Warden.class));
 		}
 		
 		// Register zombie after Husk and Drowned to make sure both work
