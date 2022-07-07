@@ -57,7 +57,6 @@ import ch.njol.util.NotifyingReference;
  */
 public class FlatFileStorage extends VariablesStorage {
 	
-	@SuppressWarnings("null")
 	public final static Charset UTF_8 = Charset.forName("UTF-8");
 	
 	/**
@@ -75,7 +74,7 @@ public class FlatFileStorage extends VariablesStorage {
 	
 	private boolean loadError = false;
 	
-	protected FlatFileStorage(final String name) {
+	protected FlatFileStorage(String name) {
 		super(name);
 	}
 	

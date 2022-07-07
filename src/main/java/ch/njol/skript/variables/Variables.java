@@ -18,6 +18,7 @@
  */
 package ch.njol.skript.variables;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
@@ -36,13 +38,15 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 
-import ch.njol.skript.log.SkriptLogger;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.SkriptAPIException;
@@ -53,9 +57,9 @@ import ch.njol.skript.config.Config;
 import ch.njol.skript.config.Node;
 import ch.njol.skript.config.SectionNode;
 import ch.njol.skript.lang.Variable;
+import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.registrations.Converters;
-import ch.njol.skript.variables.DatabaseStorage.Type;
 import ch.njol.skript.variables.SerializedVariable.Value;
 import ch.njol.util.Closeable;
 import ch.njol.util.Kleenean;
@@ -63,20 +67,15 @@ import ch.njol.util.NonNullPair;
 import ch.njol.util.SynchronizedReference;
 import ch.njol.yggdrasil.Yggdrasil;
 
-/**
- * @author Peter Güttinger
- */
 public abstract class Variables {
-	private Variables() {}
-	
+
 	public final static short YGGDRASIL_VERSION = 1;
-	
 	public final static Yggdrasil yggdrasil = new Yggdrasil(YGGDRASIL_VERSION);
 
-	public static boolean caseInsensitiveVariables = true;
-	
-	private final static String configurationSerializablePrefix = "ConfigurationSerializable_";
+	private final static Multimap<String, Class<? extends VariablesStorage>> types = HashMultimap.create();
+
 	static {
+		registerStorage(FlatFileStorage.class, "csv", "file", "flatfile");
 		yggdrasil.registerSingleClass(Kleenean.class, "Kleenean");
 		yggdrasil.registerClassResolver(new ConfigurationSerializer<ConfigurationSerializable>() {
 			{
@@ -107,9 +106,35 @@ public abstract class Variables {
 			}
 		});
 	}
-	
-	static List<VariablesStorage> storages = new ArrayList<>();
-	
+
+	private final static String configurationSerializablePrefix = "ConfigurationSerializable_";
+
+	final static List<VariablesStorage> storages = new ArrayList<>();
+
+	public static boolean caseInsensitiveVariables = true;
+
+	private Variables() {}
+
+	/**
+	 * Register a VariableStorage class for Skript to create if the user config value matches.
+	 * 
+	 * @param <T> A class to extend VariableStorage.
+	 * @param storage The class of the VariableStorage implementation.
+	 * @param names The names used in the config of Skript to select this VariableStorage.
+	 * @return if the operation was successful, or if it's already registered.
+	 */
+	public static <T extends VariablesStorage> boolean registerStorage(Class<T> storage, String... names) {
+		for (String name : names) {
+			if (types.containsKey(name))
+				return false;
+			if (types.keySet().contains(name.toLowerCase(Locale.US)))
+				return false;
+		}
+		for (String name : names)
+			types.put(name.toLowerCase(Locale.US), storage);
+		return true;
+	}
+
 	public static boolean load() {
 		assert variables.treeMap.isEmpty();
 		assert variables.hashMap.isEmpty();
@@ -155,28 +180,41 @@ public abstract class Variables {
 			boolean successful = true;
 			for (final Node node : (SectionNode) databases) {
 				if (node instanceof SectionNode) {
-					final SectionNode n = (SectionNode) node;
-					final String type = n.getValue("type");
+					SectionNode section = (SectionNode) node;
+					String type = section.getValue("type");
 					if (type == null) {
 						Skript.error("Missing entry 'type' in database definition");
 						successful = false;
 						continue;
 					}
 					
-					final String name = n.getKey();
+					String name = section.getKey();
 					assert name != null;
-					final VariablesStorage s;
-					if (type.equalsIgnoreCase("csv") || type.equalsIgnoreCase("file") || type.equalsIgnoreCase("flatfile")) {
-						s = new FlatFileStorage(name);
-					} else if (type.equalsIgnoreCase("mysql")) {
-						s = new DatabaseStorage(name, Type.MYSQL);
-					} else if (type.equalsIgnoreCase("sqlite")) {
-						s = new DatabaseStorage(name, Type.SQLITE);
-					} else {
+					VariablesStorage storage;
+					Optional<?> optional = types.entries().stream()
+							.filter(entry -> entry.getKey().equalsIgnoreCase(type))
+							.map(entry -> entry.getValue())
+							.findFirst();
+					if (!optional.isPresent()) {
+//						
+//					if (type.equalsIgnoreCase("csv") || type.equalsIgnoreCase("file") || type.equalsIgnoreCase("flatfile")) {
+//						s = new FlatFileStorage(name);
+//					} else if (type.equalsIgnoreCase("mysql")) {
+//						s = new DatabaseStorage(name, Type.MYSQL);
+//					} else if (type.equalsIgnoreCase("sqlite")) {
+//						s = new DatabaseStorage(name, Type.SQLITE);
+//					} else {
 						if (!type.equalsIgnoreCase("disabled") && !type.equalsIgnoreCase("none")) {
 							Skript.error("Invalid database type '" + type + "'");
 							successful = false;
 						}
+						continue;
+					}
+					try {
+						storage = (VariablesStorage) optional.get().getClass().getConstructor().newInstance();
+					} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+						Skript.error("Failed to initalize database type '" + type + "'");
+						successful = false;
 						continue;
 					}
 					
@@ -190,8 +228,8 @@ public abstract class Variables {
 					if (Skript.logVeryHigh())
 						Skript.info("Loading database '" + node.getKey() + "'...");
 					
-					if (s.load(n))
-						storages.add(s);
+					if (storage.load(section))
+						storages.add(storage);
 					else
 						successful = false;
 					
@@ -202,7 +240,7 @@ public abstract class Variables {
 						d = tvs.size() - x;
 					}
 					if (Skript.logVeryHigh())
-						Skript.info("Loaded " + d + " variables from the database '" + n.getKey() + "' in " + ((System.currentTimeMillis() - start) / 100) / 10.0 + " seconds");
+						Skript.info("Loaded " + d + " variables from the database '" + section.getKey() + "' in " + ((System.currentTimeMillis() - start) / 100) / 10.0 + " seconds");
 				} else {
 					Skript.error("Invalid line in databases: databases must be defined as sections");
 					successful = false;
@@ -231,7 +269,6 @@ public abstract class Variables {
 		return true;
 	}
 	
-	@SuppressWarnings("null")
 	private final static Pattern variableNameSplitPattern = Pattern.compile(Pattern.quote(Variable.SEPARATOR));
 	
 	@SuppressWarnings("null")

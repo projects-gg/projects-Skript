@@ -52,87 +52,36 @@ import ch.njol.util.SynchronizedReference;
  *
  * @author Peter Güttinger
  */
-public class DatabaseStorage extends VariablesStorage {
+public abstract class SQLStorage extends VariablesStorage {
 
 	public final static int MAX_VARIABLE_NAME_LENGTH = 380, // MySQL: 767 bytes max; cannot set max bytes, only max characters
 			MAX_CLASS_CODENAME_LENGTH = 50, // checked when registering a class
 			MAX_VALUE_SIZE = 10000;
 
-	private final static String OLD_TABLE_NAME = "variables";
-
 	private final static String SELECT_ORDER = "name, type, value, rowid";
 
-	public static enum Type {
-		MYSQL("CREATE TABLE IF NOT EXISTS %s (" +
-				"rowid        BIGINT  NOT NULL  AUTO_INCREMENT  PRIMARY KEY," +
-				"name         VARCHAR(" + MAX_VARIABLE_NAME_LENGTH + ")  NOT NULL  UNIQUE," +
-				"type         VARCHAR(" + MAX_CLASS_CODENAME_LENGTH + ")," +
-				"value        BLOB(" + MAX_VALUE_SIZE + ")," +
-				"update_guid  CHAR(36)  NOT NULL" +
-				") CHARACTER SET ucs2 COLLATE ucs2_bin") {// MySQL treats UTF16 as 4 byte charset, resulting in a short max name length. UCS2 uses 2 bytes.
-			@Override
-			@Nullable
-			protected Object initialise(final DatabaseStorage s, final SectionNode n) {
-				final String host = s.getValue(n, "host");
-				final Integer port = s.getValue(n, "port", Integer.class);
-				final String user = s.getValue(n, "user");
-				final String password = s.getValue(n, "password");
-				final String database = s.getValue(n, "database");
-				s.setTableName(n.get("table", "variables21"));
-				if (host == null || port == null || user == null || password == null || database == null)
-					return null;
-				return new MySQL(SkriptLogger.LOGGER, "[Skript]", host, port, database, user, password);
-			}
-		},
-		SQLITE("CREATE TABLE IF NOT EXISTS %s (" +
-				"name         VARCHAR(" + MAX_VARIABLE_NAME_LENGTH + ")  NOT NULL  PRIMARY KEY," +
-				"type         VARCHAR(" + MAX_CLASS_CODENAME_LENGTH + ")," +
-				"value        BLOB(" + MAX_VALUE_SIZE + ")," +
-				"update_guid  CHAR(36)  NOT NULL" +
-				")") {// SQLite uses Unicode exclusively
-			@Override
-			@Nullable
-			protected Object initialise(final DatabaseStorage s, final SectionNode config) {
-				final File f = s.file;
-				if (f == null)
-					return null;
-				s.setTableName(config.get("table", "variables21"));
-				final String name = f.getName();
-				assert name.endsWith(".db");
-				return new SQLite(SkriptLogger.LOGGER, "[Skript]", f.getParent(), name.substring(0, name.length() - ".db".length()));
-			}
-		};
+	private final static String OLD_TABLE_NAME = "variables";
 
-		final String createQuery;
-
-		private Type(final String createQuery) {
-			this.createQuery = createQuery;
-		}
-
-		@Nullable
-		protected abstract Object initialise(DatabaseStorage s, SectionNode config);
-	}
-
-	private final Type type;
-	private String tableName;
 	@Nullable
 	private String formattedCreateQuery;
+	private final String query;
+	private String tableName;
 
 	final SynchronizedReference<Database> db = new SynchronizedReference<>(null);
 
 	private boolean monitor = false;
 	long monitor_interval;
 
-	private final static String guid = "" + UUID.randomUUID().toString();
+	private final static String guid = UUID.randomUUID().toString();
 
 	/**
 	 * The delay between transactions in milliseconds.
 	 */
 	private final static long TRANSACTION_DELAY = 500;
 
-	DatabaseStorage(final String name, final Type type) {
+	protected SQLStorage(String name, String query) {
 		super(name);
-		this.type = type;
+		this.query = query;
 		this.tableName = "variables21";
 	}
 
@@ -144,15 +93,16 @@ public class DatabaseStorage extends VariablesStorage {
 		this.tableName = tableName;
 	}
 
+	public abstract Object initialize(SectionNode config);
+
 	/**
 	 * Retrieve the create query with the tableName in it
 	 * @return the create query with the tableName in it (%s -> tableName)
 	 */
 	@Nullable
-	public String getFormattedCreateQuery(){
-		if (formattedCreateQuery == null){
-			formattedCreateQuery = String.format(type.createQuery, tableName);
-		}
+	public String getFormattedCreateQuery() {
+		if (formattedCreateQuery == null)
+			formattedCreateQuery = String.format(query, tableName);
 		return formattedCreateQuery;
 	}
 
@@ -161,10 +111,10 @@ public class DatabaseStorage extends VariablesStorage {
 	 * {@link Variables#variableLoaded(String, Object, VariablesStorage)}).
 	 */
 	@Override
-	protected boolean load_i(final SectionNode n) {
+	protected boolean load_i(SectionNode n) {
 		synchronized (db) {
-			final Plugin p = Bukkit.getPluginManager().getPlugin("SQLibrary");
-			if (p == null || !(p instanceof SQLibrary)) {
+			Plugin plugin = Bukkit.getPluginManager().getPlugin("SQLibrary");
+			if (plugin == null || !(plugin instanceof SQLibrary)) {
 				Skript.error("You need the plugin SQLibrary in order to use a database with Skript. You can download the latest version from https://dev.bukkit.org/projects/sqlibrary/files/");
 				return false;
 			}
@@ -178,7 +128,7 @@ public class DatabaseStorage extends VariablesStorage {
 
 			final Database db;
 			try {
-				final Object o = type.initialise(this, n);
+				final Object o = initialize(n);
 				if (o == null)
 					return false;
 				this.db.set(db = (Database) o);
@@ -208,7 +158,7 @@ public class DatabaseStorage extends VariablesStorage {
 					db.query(getFormattedCreateQuery());
 				} catch (final SQLException e) {
 					Skript.error("Could not create the variables table '" + tableName + "' in the database '" + databaseName + "': " + e.getLocalizedMessage() + ". "
-							+ "Please create the table yourself using the following query: " + String.format(type.createQuery, tableName).replace(",", ", ").replaceAll("\\s+", " "));
+							+ "Please create the table yourself using the following query: " + String.format(query, tableName).replace(",", ", ").replaceAll("\\s+", " "));
 					return false;
 				}
 
@@ -293,9 +243,9 @@ public class DatabaseStorage extends VariablesStorage {
 				@Override
 				public void run() {
 					while (!closed) {
-						synchronized (DatabaseStorage.this.db) {
+						synchronized (SQLStorage.this.db) {
 							try {
-								final Database db = DatabaseStorage.this.db.get();
+								final Database db = SQLStorage.this.db.get();
 								if (db != null)
 									db.query("SELECT * FROM " + getTableName() + " LIMIT 1");
 							} catch (final SQLException e) {}
@@ -322,7 +272,7 @@ public class DatabaseStorage extends VariablesStorage {
 				long lastCommit;
 				while (!closed) {
 					synchronized (db) {
-						final Database db = DatabaseStorage.this.db.get();
+						final Database db = SQLStorage.this.db.get();
 						try {
 							if (db != null)
 								db.getConnection().commit();
@@ -373,11 +323,6 @@ public class DatabaseStorage extends VariablesStorage {
 	}
 
 	@Override
-	protected boolean requiresFile() {
-		return type == Type.SQLITE;
-	}
-
-	@Override
 	protected File getFile(String file) {
 		if (!file.endsWith(".db"))
 			file = file + ".db"; // required by SQLibrary
@@ -397,7 +342,7 @@ public class DatabaseStorage extends VariablesStorage {
 			final Database db = this.db.get();
 			if (db == null || !db.open()) {
 				if (first)
-					Skript.error("Cannot connect to the database '" + databaseName + "'! Please make sure that all settings are correct" + (type == Type.MYSQL ? " and that the database software is running" : "") + ".");
+					Skript.error("Cannot connect to the database '" + databaseName + "'! Please make sure that all settings are correct");// + (type == Type.MYSQL ? " and that the database software is running" : "") + ".");
 				else
 					Skript.exception("Cannot reconnect to the database '" + databaseName + "'!");
 				return false;
@@ -576,7 +521,7 @@ public class DatabaseStorage extends VariablesStorage {
 							synchronized (db) {
 								if (closed || db.get() == null)
 									return;
-								final PreparedStatement monitorCleanUpQuery = DatabaseStorage.this.monitorCleanUpQuery;
+								final PreparedStatement monitorCleanUpQuery = SQLStorage.this.monitorCleanUpQuery;
 								assert monitorCleanUpQuery != null;
 								monitorCleanUpQuery.setLong(1, lastRowID);
 								monitorCleanUpQuery.executeUpdate();
@@ -629,7 +574,7 @@ public class DatabaseStorage extends VariablesStorage {
 						final byte[] value = r.getBytes(i++); // Blob not supported by SQLite
 						lastRowID = r.getLong(i++);
 						if (value == null) {
-							Variables.variableLoaded(name, null, DatabaseStorage.this);
+							Variables.variableLoaded(name, null, SQLStorage.this);
 						} else {
 							final ClassInfo<?> c = Classes.getClassInfoNoError(type);
 							@SuppressWarnings("unused")
@@ -646,7 +591,7 @@ public class DatabaseStorage extends VariablesStorage {
 								Skript.error("Cannot load the variable {" + name + "} from the database '" + databaseName + "', because it cannot be loaded as " + c.getName().withIndefiniteArticle());
 								continue;
 							}
-							Variables.variableLoaded(name, d, DatabaseStorage.this);
+							Variables.variableLoaded(name, d, SQLStorage.this);
 //					}
 						}
 					}
@@ -765,7 +710,7 @@ public class DatabaseStorage extends VariablesStorage {
 						final String value = r.getString(i++);
 						lastRowID = r.getLong(i++);
 						if (type == null || value == null) {
-							Variables.variableLoaded(name, null, hadNewTable ? temp : DatabaseStorage.this);
+							Variables.variableLoaded(name, null, hadNewTable ? temp : SQLStorage.this);
 						} else {
 							final ClassInfo<?> c = Classes.getClassInfoNoError(type);
 							Serializer<?> s;
@@ -781,7 +726,7 @@ public class DatabaseStorage extends VariablesStorage {
 								Skript.error("Cannot load the variable {" + name + "} from the database, because '" + value + "' cannot be parsed as a " + type);
 								continue;
 							}
-							Variables.variableLoaded(name, d, DatabaseStorage.this);
+							Variables.variableLoaded(name, d, SQLStorage.this);
 //					}
 						}
 					}
