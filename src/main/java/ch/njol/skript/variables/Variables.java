@@ -76,6 +76,8 @@ public abstract class Variables {
 
 	static {
 		registerStorage(FlatFileStorage.class, "csv", "file", "flatfile");
+		registerStorage(SQLiteStorage.class, "sqlite");
+		registerStorage(MySQLStorage.class, "mysql");
 		yggdrasil.registerSingleClass(Kleenean.class, "Kleenean");
 		yggdrasil.registerClassResolver(new ConfigurationSerializer<ConfigurationSerializable>() {
 			{
@@ -196,14 +198,6 @@ public abstract class Variables {
 							.map(entry -> entry.getValue())
 							.findFirst();
 					if (!optional.isPresent()) {
-//						
-//					if (type.equalsIgnoreCase("csv") || type.equalsIgnoreCase("file") || type.equalsIgnoreCase("flatfile")) {
-//						s = new FlatFileStorage(name);
-//					} else if (type.equalsIgnoreCase("mysql")) {
-//						s = new DatabaseStorage(name, Type.MYSQL);
-//					} else if (type.equalsIgnoreCase("sqlite")) {
-//						s = new DatabaseStorage(name, Type.SQLITE);
-//					} else {
 						if (!type.equalsIgnoreCase("disabled") && !type.equalsIgnoreCase("none")) {
 							Skript.error("Invalid database type '" + type + "'");
 							successful = false;

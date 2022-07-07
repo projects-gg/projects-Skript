@@ -83,7 +83,7 @@ public class FlatFileStorage extends VariablesStorage {
 	 */
 	@SuppressWarnings({"deprecation"})
 	@Override
-	protected boolean load_i(final SectionNode n) {
+	protected boolean load_i(SectionNode n) {
 		SkriptLogger.setNode(null);
 		
 		IOException ioEx = null;
