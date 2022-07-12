@@ -24,7 +24,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.Skript;
@@ -71,7 +70,7 @@ public abstract class VariablesStorage implements Closeable {
 	 * 
 	 * @param name The configuration name that was used. This will be inserted by Skript.
 	 */
-	protected VariablesStorage(@NonNull String name) {
+	protected VariablesStorage(String name) {
 		assert name != null;
 		databaseName = name;
 		writeThread = Skript.newThread(new Runnable() {

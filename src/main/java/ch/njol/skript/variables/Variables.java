@@ -69,6 +69,8 @@ import ch.njol.yggdrasil.Yggdrasil;
 
 public abstract class Variables {
 
+	// Field order matters!
+
 	public final static short YGGDRASIL_VERSION = 1;
 	public final static Yggdrasil yggdrasil = new Yggdrasil(YGGDRASIL_VERSION);
 
@@ -95,21 +97,21 @@ public abstract class Variables {
 			@Nullable
 			public String getID(final @NonNull Class<?> c) {
 				if (ConfigurationSerializable.class.isAssignableFrom(c) && Classes.getSuperClassInfo(c) == Classes.getExactClassInfo(Object.class))
-					return configurationSerializablePrefix + ConfigurationSerialization.getAlias((Class<? extends ConfigurationSerializable>) c);
+					return CONFIGURATION_SERIALIZABLE_PREFIX + ConfigurationSerialization.getAlias((Class<? extends ConfigurationSerializable>) c);
 				return null;
 			}
 			
 			@Override
 			@Nullable
 			public Class<? extends ConfigurationSerializable> getClass(final @NonNull String id) {
-				if (id.startsWith(configurationSerializablePrefix))
-					return ConfigurationSerialization.getClassByAlias(id.substring(configurationSerializablePrefix.length()));
+				if (id.startsWith(CONFIGURATION_SERIALIZABLE_PREFIX))
+					return ConfigurationSerialization.getClassByAlias(id.substring(CONFIGURATION_SERIALIZABLE_PREFIX.length()));
 				return null;
 			}
 		});
 	}
 
-	private final static String configurationSerializablePrefix = "ConfigurationSerializable_";
+	private final static String CONFIGURATION_SERIALIZABLE_PREFIX = "ConfigurationSerializable_";
 
 	final static List<VariablesStorage> storages = new ArrayList<>();
 
@@ -129,11 +131,11 @@ public abstract class Variables {
 		for (String name : names) {
 			if (types.containsKey(name))
 				return false;
-			if (types.keySet().contains(name.toLowerCase(Locale.US)))
+			if (types.keySet().contains(name.toLowerCase(Locale.ENGLISH)))
 				return false;
 		}
 		for (String name : names)
-			types.put(name.toLowerCase(Locale.US), storage);
+			types.put(name.toLowerCase(Locale.ENGLISH), storage);
 		return true;
 	}
 
