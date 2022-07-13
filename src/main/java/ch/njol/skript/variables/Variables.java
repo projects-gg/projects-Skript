@@ -61,6 +61,7 @@ import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.registrations.Converters;
 import ch.njol.skript.variables.SerializedVariable.Value;
+import ch.njol.skript.variables2.StorageConfiguration;
 import ch.njol.util.Closeable;
 import ch.njol.util.Kleenean;
 import ch.njol.util.NonNullPair;
@@ -144,7 +145,7 @@ public abstract class Variables {
 		assert variables.hashMap.isEmpty();
 		assert storages.isEmpty();
 		
-		final Config c = SkriptConfig.getConfig();
+		Config c = SkriptConfig.getConfig();
 		if (c == null)
 			throw new SkriptAPIException("Cannot load variables before the config");
 		final Node databases = c.getMainNode().get("databases");
@@ -179,7 +180,6 @@ public abstract class Variables {
 			}
 		};
 		loadingLoggerThread.start();
-		
 		try {
 			boolean successful = true;
 			for (Node node : (SectionNode) databases) {
@@ -191,7 +191,8 @@ public abstract class Variables {
 						successful = false;
 						continue;
 					}
-					
+					// TODO with later
+					StorageConfiguration configuration = new StorageConfiguration(type, section);
 					String name = section.getKey();
 					assert name != null;
 					VariablesStorage storage;

@@ -115,17 +115,17 @@ public abstract class VariablesStorage implements Closeable {
 		}
 	}
 	
-	public final boolean load(final SectionNode n) {
-		final String pattern = getValue(n, "pattern");
-		if (pattern == null)
-			return false;
-		try {
-			variablePattern = pattern.equals(".*") || pattern.equals(".+") ? null : Pattern.compile(pattern);
-		} catch (final PatternSyntaxException e) {
-			Skript.error("Invalid pattern '" + pattern + "': " + e.getLocalizedMessage());
-			return false;
-		}
-		
+	public final boolean load(SectionNode n) {
+//		final String pattern = getValue(n, "pattern");
+//		if (pattern == null)
+//			return false;
+//		try {
+//			variablePattern = pattern.equals(".*") || pattern.equals(".+") ? null : Pattern.compile(pattern);
+//		} catch (final PatternSyntaxException e) {
+//			Skript.error("Invalid pattern '" + pattern + "': " + e.getLocalizedMessage());
+//			return false;
+//		}
+//		
 		if (requiresFile()) {
 			final String f = getValue(n, "file");
 			if (f == null)
