@@ -37,6 +37,12 @@ public class CaffeineVariableStorage extends VariableStorage {
 	}
 
 	@Override
+	public boolean requiresFile() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
 	@Nullable
 	public Object getVariable(String name, @Nullable Event e, boolean local) {
 		// TODO Auto-generated method stub
@@ -56,6 +62,12 @@ public class CaffeineVariableStorage extends VariableStorage {
 	@Override
 	void onReload(StorageConfiguration configuration) {
 		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void close() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

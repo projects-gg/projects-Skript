@@ -28,9 +28,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,15 +50,9 @@ import ch.njol.skript.config.Node;
 import ch.njol.skript.config.SectionNode;
 import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.registrations.Classes;
-import ch.njol.skript.util.Utils;
-import ch.njol.skript.variables.FlatFileStorage;
-import ch.njol.skript.variables.MySQLStorage;
-import ch.njol.skript.variables.SQLiteStorage;
-import ch.njol.skript.variables.VariablesStorage;
 import ch.njol.util.Closeable;
 import ch.njol.util.Kleenean;
 import ch.njol.util.NonNullPair;
-import ch.njol.util.StringUtils;
 import ch.njol.yggdrasil.Yggdrasil;
 
 public class Variables {
@@ -70,7 +62,7 @@ public class Variables {
 	public final static short YGGDRASIL_VERSION = 1;
 	public final static Yggdrasil yggdrasil = new Yggdrasil(YGGDRASIL_VERSION);
 
-	private final static Multimap<Class<? extends VariablesStorage>, String> types = HashMultimap.create();
+	private final static Multimap<Class<? extends VariableStorage>, String> types = HashMultimap.create();
 
 	static {
 		Skript.closeOnDisable(new Closeable() {
@@ -79,9 +71,9 @@ public class Variables {
 				close();
 			}
 		});
-		registerStorage(FlatFileStorage.class, "csv", "file", "flatfile");
-		registerStorage(SQLiteStorage.class, "sqlite");
-		registerStorage(MySQLStorage.class, "mysql");
+//		registerStorage(FlatFileStorage.class, "csv", "file", "flatfile");
+//		registerStorage(SQLiteStorage.class, "sqlite");
+//		registerStorage(MySQLStorage.class, "mysql");
 		yggdrasil.registerSingleClass(Kleenean.class, "Kleenean");
 		yggdrasil.registerClassResolver(new ConfigurationSerializer<ConfigurationSerializable>() {
 			{
@@ -118,7 +110,7 @@ public class Variables {
 	/**
 	 * The storages the user currently has active.
 	 */
-	final static List<VariablesStorage> storages = new ArrayList<>();
+	final static List<VariableStorage> storages = new ArrayList<>();
 
 	public static boolean caseInsensitiveVariables = true;
 
@@ -134,7 +126,7 @@ public class Variables {
 	 * @param names The names used in the config of Skript to select this VariableStorage.
 	 * @return if the operation was successful, or if it's already registered.
 	 */
-	public static <T extends VariablesStorage> boolean registerStorage(Class<T> storage, String... names) {
+	public static <T extends VariableStorage> boolean registerStorage(Class<T> storage, String... names) {
 		if (types.containsKey(storage))
 			return false;
 		for (String name : names) {
@@ -166,7 +158,7 @@ public class Variables {
 			return false;
 		}
 
-		Map<String, NonNullPair<Object, VariablesStorage>> tempVars = new HashMap<String, NonNullPair<Object, VariablesStorage>>();
+		Map<String, NonNullPair<Object, VariableStorage>> tempVars = new HashMap<String, NonNullPair<Object, VariableStorage>>();
 
 		// Reports once per second how many variables were loaded. Useful to make clear that Skript is still doing something if it's loading many variables.
 		Thread loadingLoggerThread = new Thread() {
@@ -211,12 +203,12 @@ public class Variables {
 							Skript.error("Misconfigured database type '" + type + "'");
 							return null;
 						}
-						return new Callable<VariablesStorage>() {
+						return new Callable<VariableStorage>() {
 							@Override
-							public VariablesStorage call() {
-								VariablesStorage storage;
+							public VariableStorage call() {
+								VariableStorage storage;
 								try {
-									storage = (VariablesStorage) optional.get().getClass().getConstructor().newInstance(configuration);
+									storage = (VariableStorage) optional.get().getClass().getConstructor().newInstance(configuration);
 								} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 									Skript.error("Failed to initalize database type '" + type + "'");
 									return null;
@@ -226,7 +218,7 @@ public class Variables {
 									Skript.info("Loading database '" + name + "'...");
 
 								int size = tempVars.size();
-								if (!storage.load(section))
+								if (!storage.initialize())
 									return null;
 								if (Skript.logVeryHigh())
 									Skript.info("Loaded " + (tempVars.size() - size) + " variables from the database '" + name + "' in " + ((System.currentTimeMillis() - start) / 100) / 10.0 + " seconds");
@@ -238,9 +230,11 @@ public class Variables {
 					.collect(Collectors.toList()))
 			.forEach(future -> {
 				try {
-					VariablesStorage storage = future.get();
-					if (storage != null)
+					VariableStorage storage = future.get();
+					if (storage != null) {
 						storages.add(storage);
+						Skript.closeOnDisable(storage);
+					}
 				} catch (InterruptedException | ExecutionException ignored) {}
 			});
 		} catch (InterruptedException e) {
@@ -262,6 +256,9 @@ public class Variables {
 		return true;
 	}
 
+	/**
+	 * Clean up everything but the VariableStorage, because they have a method already.
+	 */
 	public static void close() {
 		if (!loaded)
 			return;

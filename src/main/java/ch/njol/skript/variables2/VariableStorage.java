@@ -3,11 +3,13 @@ package ch.njol.skript.variables2;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
+import ch.njol.util.Closeable;
+
 /**
  * Variable storage. Implementations of this class will handle
  * getting, setting and saving of variables.
  */
-public abstract class VariableStorage {
+public abstract class VariableStorage implements Closeable {
 
 	protected StorageConfiguration configuration;
 
@@ -28,6 +30,13 @@ public abstract class VariableStorage {
 		onReload(configuration);
 		this.configuration = configuration;
 	}
+
+	/**
+	 * If this stroage requires a file.
+	 * 
+	 * @return boolean if this storage requires a file.
+	 */
+	public abstract boolean requiresFile();
 
 	/**
 	 * Return the StorageConfiguration for this storage which contains the user's values from the config.sk

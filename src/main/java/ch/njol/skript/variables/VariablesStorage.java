@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -115,7 +114,7 @@ public abstract class VariablesStorage implements Closeable {
 		}
 	}
 	
-	public final boolean load(SectionNode n) {
+//	public final boolean load(SectionNode n) {
 //		final String pattern = getValue(n, "pattern");
 //		if (pattern == null)
 //			return false;
@@ -126,55 +125,55 @@ public abstract class VariablesStorage implements Closeable {
 //			return false;
 //		}
 //		
-		if (requiresFile()) {
-			final String f = getValue(n, "file");
-			if (f == null)
-				return false;
-			final File file = getFile(f).getAbsoluteFile();
-			this.file = file;
-			if (file.exists() && !file.isFile()) {
-				Skript.error("The database file '" + file.getName() + "' must be an actual file, not a directory.");
-				return false;
-			} else {
-				try {
-					file.createNewFile();
-				} catch (final IOException e) {
-					Skript.error("Cannot create the database file '" + file.getName() + "': " + e.getLocalizedMessage());
-					return false;
-				}
-			}
-			if (!file.canWrite()) {
-				Skript.error("Cannot write to the database file '" + file.getName() + "'!");
-				return false;
-			}
-			if (!file.canRead()) {
-				Skript.error("Cannot read from the database file '" + file.getName() + "'!");
-//				Skript.error("This means that no variables will be available and can also prevent new variables from being saved!");
+//		if (requiresFile()) {
+//			final String f = getValue(n, "file");
+//			if (f == null)
+//				return false;
+//			final File file = getFile(f).getAbsoluteFile();
+//			this.file = file;
+//			if (file.exists() && !file.isFile()) {
+//				Skript.error("The database file '" + file.getName() + "' must be an actual file, not a directory.");
+//				return false;
+//			} else {
 //				try {
-//					final File backup = FileUtils.backup(file);
-//					Skript.error("A backup of your variables.csv was created as " + backup.getName());
+//					file.createNewFile();
 //				} catch (final IOException e) {
-//					Skript.error("Failed to create a backup of your variables.csv: " + e.getLocalizedMessage());
-//					loadError = true;
+//					Skript.error("Cannot create the database file '" + file.getName() + "': " + e.getLocalizedMessage());
+//					return false;
 //				}
-				return false;
-			}
-			
-			if (!"0".equals(getValue(n, "backup interval"))) {
-				final Timespan backupInterval = getValue(n, "backup interval", Timespan.class);
-				if (backupInterval != null)
-					startBackupTask(backupInterval);
-			}
-		}
-		
-		if (!load_i(n))
-			return false;
-		
-		writeThread.start();
-		Skript.closeOnDisable(this);
-		
-		return true;
-	}
+//			}
+//			if (!file.canWrite()) {
+//				Skript.error("Cannot write to the database file '" + file.getName() + "'!");
+//				return false;
+//			}
+//			if (!file.canRead()) {
+//				Skript.error("Cannot read from the database file '" + file.getName() + "'!");
+////				Skript.error("This means that no variables will be available and can also prevent new variables from being saved!");
+////				try {
+////					final File backup = FileUtils.backup(file);
+////					Skript.error("A backup of your variables.csv was created as " + backup.getName());
+////				} catch (final IOException e) {
+////					Skript.error("Failed to create a backup of your variables.csv: " + e.getLocalizedMessage());
+////					loadError = true;
+////				}
+//				return false;
+//			}
+//			
+//			if (!"0".equals(getValue(n, "backup interval"))) {
+//				final Timespan backupInterval = getValue(n, "backup interval", Timespan.class);
+//				if (backupInterval != null)
+//					startBackupTask(backupInterval);
+//			}
+//		}
+//		
+//		if (!load_i(n))
+//			return false;
+//		
+//		writeThread.start();
+//		Skript.closeOnDisable(this);
+//		
+//		return true;
+//	}
 	
 	/**
 	 * Loads variables stored here.
