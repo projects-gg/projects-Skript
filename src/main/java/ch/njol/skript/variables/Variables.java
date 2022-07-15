@@ -18,7 +18,6 @@
  */
 package ch.njol.skript.variables;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,7 +25,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
@@ -49,20 +47,12 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import ch.njol.skript.Skript;
-import ch.njol.skript.SkriptAPIException;
-import ch.njol.skript.SkriptConfig;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.classes.ConfigurationSerializer;
-import ch.njol.skript.config.Config;
-import ch.njol.skript.config.Node;
-import ch.njol.skript.config.SectionNode;
 import ch.njol.skript.lang.Variable;
-import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.registrations.Converters;
 import ch.njol.skript.variables.SerializedVariable.Value;
-import ch.njol.skript.variables2.StorageConfiguration;
-import ch.njol.util.Closeable;
 import ch.njol.util.Kleenean;
 import ch.njol.util.NonNullPair;
 import ch.njol.util.SynchronizedReference;
@@ -140,131 +130,131 @@ public abstract class Variables {
 		return true;
 	}
 
-	public static boolean load() {
-		assert variables.treeMap.isEmpty();
-		assert variables.hashMap.isEmpty();
-		assert storages.isEmpty();
-		
-		Config c = SkriptConfig.getConfig();
-		if (c == null)
-			throw new SkriptAPIException("Cannot load variables before the config");
-		final Node databases = c.getMainNode().get("databases");
-		if (databases == null || !(databases instanceof SectionNode)) {
-			Skript.error("The config is missing the required 'databases' section that defines where the variables are saved");
-			return false;
-		}
-		
-		Skript.closeOnDisable(new Closeable() {
-			@Override
-			public void close() {
-				Variables.close();
-			}
-		});
-		
-		// reports once per second how many variables were loaded. Useful to make clear that Skript is still doing something if it's loading many variables
-		final Thread loadingLoggerThread = new Thread() {
-			@Override
-			public void run() {
-				while (true) {
-					try {
-						Thread.sleep(Skript.logNormal() ? 1000 : 5000); // low verbosity won't disable these messages, but makes them more rare
-					} catch (final InterruptedException e) {}
-					synchronized (tempVars) {
-						final Map<String, NonNullPair<Object, VariablesStorage>> tvs = tempVars.get();
-						if (tvs != null)
-							Skript.info("Loaded " + tvs.size() + " variables so far...");
-						else
-							break;
-					}
-				}
-			}
-		};
-		loadingLoggerThread.start();
-		try {
-			boolean successful = true;
-			for (Node node : (SectionNode) databases) {
-				if (node instanceof SectionNode) {
-					SectionNode section = (SectionNode) node;
-					String type = section.getValue("type");
-					if (type == null) {
-						Skript.error("Missing entry 'type' in database definition");
-						successful = false;
-						continue;
-					}
-					// TODO with later
-					StorageConfiguration configuration = new StorageConfiguration(type, section);
-					String name = section.getKey();
-					assert name != null;
-					VariablesStorage storage;
-					Optional<?> optional = types.entries().stream()
-							.filter(entry -> entry.getValue().equalsIgnoreCase(type))
-							.map(entry -> entry.getKey())
-							.findFirst();
-					if (!optional.isPresent()) {
-						if (!type.equalsIgnoreCase("disabled") && !type.equalsIgnoreCase("none")) {
-							Skript.error("Invalid database type '" + type + "'");
-							successful = false;
-						}
-						continue;
-					}
-					try {
-						storage = (VariablesStorage) optional.get().getClass().getConstructor().newInstance();
-					} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-						Skript.error("Failed to initalize database type '" + type + "'");
-						successful = false;
-						continue;
-					}
-					
-					final int x;
-					synchronized (tempVars) {
-						final Map<String, NonNullPair<Object, VariablesStorage>> tvs = tempVars.get();
-						assert tvs != null;
-						x = tvs.size();
-					}
-					final long start = System.currentTimeMillis();
-					if (Skript.logVeryHigh())
-						Skript.info("Loading database '" + node.getKey() + "'...");
-					
-					if (storage.load(section))
-						storages.add(storage);
-					else
-						successful = false;
-					
-					final int d;
-					synchronized (tempVars) {
-						final Map<String, NonNullPair<Object, VariablesStorage>> tvs = tempVars.get();
-						assert tvs != null;
-						d = tvs.size() - x;
-					}
-					if (Skript.logVeryHigh())
-						Skript.info("Loaded " + d + " variables from the database '" + section.getKey() + "' in " + ((System.currentTimeMillis() - start) / 100) / 10.0 + " seconds");
-				} else {
-					Skript.error("Invalid line in databases: databases must be defined as sections");
-					successful = false;
-				}
-			}
-			if (!successful)
-				return false;
-			
-			if (storages.isEmpty()) {
-				Skript.error("No databases to store variables are defined. Please enable at least the default database, even if you don't use variables at all.");
-				return false;
-			}
-		} finally {
-			SkriptLogger.setNode(null);
-
-			// make sure to put the loaded variables into the variables map
-			final int n = onStoragesLoaded();
-			if (n != 0) {
-				Skript.warning(n + " variables were possibly discarded due to not belonging to any database (SQL databases keep such variables and will continue to generate this warning, while CSV discards them).");
-			}
-			
-			loadingLoggerThread.interrupt();
-			
-			saveThread.start();
-		}
-		return true;
-	}
+//	public static boolean load() {
+//		assert variables.treeMap.isEmpty();
+//		assert variables.hashMap.isEmpty();
+//		assert storages.isEmpty();
+//		
+//		Config c = SkriptConfig.getConfig();
+//		if (c == null)
+//			throw new SkriptAPIException("Cannot load variables before the config");
+//		final Node databases = c.getMainNode().get("databases");
+//		if (databases == null || !(databases instanceof SectionNode)) {
+//			Skript.error("The config is missing the required 'databases' section that defines where the variables are saved");
+//			return false;
+//		}
+//		
+//		Skript.closeOnDisable(new Closeable() {
+//			@Override
+//			public void close() {
+//				Variables.close();
+//			}
+//		});
+//		
+//		// reports once per second how many variables were loaded. Useful to make clear that Skript is still doing something if it's loading many variables
+//		final Thread loadingLoggerThread = new Thread() {
+//			@Override
+//			public void run() {
+//				while (true) {
+//					try {
+//						Thread.sleep(Skript.logNormal() ? 1000 : 5000); // low verbosity won't disable these messages, but makes them more rare
+//					} catch (final InterruptedException e) {}
+//					synchronized (tempVars) {
+//						final Map<String, NonNullPair<Object, VariablesStorage>> tvs = tempVars.get();
+//						if (tvs != null)
+//							Skript.info("Loaded " + tvs.size() + " variables so far...");
+//						else
+//							break;
+//					}
+//				}
+//			}
+//		};
+//		loadingLoggerThread.start();
+//		try {
+//			boolean successful = true;
+//			for (Node node : (SectionNode) databases) {
+//				if (node instanceof SectionNode) {
+//					SectionNode section = (SectionNode) node;
+//					String type = section.getValue("type");
+//					if (type == null) {
+//						Skript.error("Missing entry 'type' in database definition");
+//						successful = false;
+//						continue;
+//					}
+//					// TODO with later
+//					StorageConfiguration configuration = new StorageConfiguration(type, section);
+//					String name = section.getKey();
+//					assert name != null;
+//					VariablesStorage storage;
+//					Optional<?> optional = types.entries().stream()
+//							.filter(entry -> entry.getValue().equalsIgnoreCase(type))
+//							.map(entry -> entry.getKey())
+//							.findFirst();
+//					if (!optional.isPresent()) {
+//						if (!type.equalsIgnoreCase("disabled") && !type.equalsIgnoreCase("none")) {
+//							Skript.error("Invalid database type '" + type + "'");
+//							successful = false;
+//						}
+//						continue;
+//					}
+//					try {
+//						storage = (VariablesStorage) optional.get().getClass().getConstructor().newInstance();
+//					} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+//						Skript.error("Failed to initalize database type '" + type + "'");
+//						successful = false;
+//						continue;
+//					}
+//					
+//					final int x;
+//					synchronized (tempVars) {
+//						final Map<String, NonNullPair<Object, VariablesStorage>> tvs = tempVars.get();
+//						assert tvs != null;
+//						x = tvs.size();
+//					}
+//					final long start = System.currentTimeMillis();
+//					if (Skript.logVeryHigh())
+//						Skript.info("Loading database '" + node.getKey() + "'...");
+//					
+//					if (storage.load(section))
+//						storages.add(storage);
+//					else
+//						successful = false;
+//					
+//					final int d;
+//					synchronized (tempVars) {
+//						final Map<String, NonNullPair<Object, VariablesStorage>> tvs = tempVars.get();
+//						assert tvs != null;
+//						d = tvs.size() - x;
+//					}
+//					if (Skript.logVeryHigh())
+//						Skript.info("Loaded " + d + " variables from the database '" + section.getKey() + "' in " + ((System.currentTimeMillis() - start) / 100) / 10.0 + " seconds");
+//				} else {
+//					Skript.error("Invalid line in databases: databases must be defined as sections");
+//					successful = false;
+//				}
+//			}
+//			if (!successful)
+//				return false;
+//			
+//			if (storages.isEmpty()) {
+//				Skript.error("No databases to store variables are defined. Please enable at least the default database, even if you don't use variables at all.");
+//				return false;
+//			}
+//		} finally {
+//			SkriptLogger.setNode(null);
+//
+//			// make sure to put the loaded variables into the variables map
+//			final int n = onStoragesLoaded();
+//			if (n != 0) {
+//				Skript.warning(n + " variables were possibly discarded due to not belonging to any database (SQL databases keep such variables and will continue to generate this warning, while CSV discards them).");
+//			}
+//			
+//			loadingLoggerThread.interrupt();
+//			
+//			saveThread.start();
+//		}
+//		return true;
+//	}
 	
 	private final static Pattern variableNameSplitPattern = Pattern.compile(Pattern.quote(Variable.SEPARATOR));
 	

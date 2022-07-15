@@ -37,12 +37,14 @@ public class StorageConfiguration {
 	 * Used by Skript to validate configuration.
 	 */
 	boolean validate() {
-		if (pattern == null)
+		if (pattern == null) {
+			Skript.error("The 'pattern' for database '" + getUsedDatabaseType() + "' was null");
 			return false;
+		}
 		try {
 			variablePattern = pattern.equals(".*") || pattern.equals(".+") ? null : Pattern.compile(pattern);
 		} catch (final PatternSyntaxException e) {
-			Skript.error("Invalid pattern '" + pattern + "': " + e.getLocalizedMessage());
+			Skript.error("Invalid pattern for database '" + getUsedDatabaseType() + "' pattern was '" + pattern + "': " + e.getLocalizedMessage());
 			return false;
 		}
 		return true;

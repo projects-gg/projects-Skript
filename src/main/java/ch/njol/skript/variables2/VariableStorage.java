@@ -3,6 +3,8 @@ package ch.njol.skript.variables2;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
+import ch.njol.skript.config.SectionNode;
+import ch.njol.skript.variables.Variables;
 import ch.njol.util.Closeable;
 
 /**
@@ -86,5 +88,17 @@ public abstract class VariableStorage implements Closeable {
 	 * server shutdown, but rarely else.
 	 */
 	abstract void flush();
+
+	/**
+	 * (Re)connects to the database (not called on the first connect - do this in {@link #load_i(SectionNode)}).
+	 * 
+	 * @return Whether the connection could be re-established. An error should be printed by this method prior to returning false.
+	 */
+	protected abstract boolean connect();
+
+	/**
+	 * Disconnects from the database.
+	 */
+	protected abstract void disconnect();
 
 }

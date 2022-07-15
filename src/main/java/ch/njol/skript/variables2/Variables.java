@@ -138,6 +138,16 @@ public class Variables {
 		return true;
 	}
 
+	public static int getNumberOfVariables() {
+		return 0;
+//		try {
+//			variablesLock.readLock().lock();
+//			return variables.hashMap.size();
+//		} finally {
+//			variablesLock.readLock().unlock();
+//		}
+	}
+
 	/**
 	 * Loads the database: SectionNode called from SkriptConfig.
 	 * 
@@ -209,6 +219,14 @@ public class Variables {
 								VariableStorage storage;
 								try {
 									storage = (VariableStorage) optional.get().getClass().getConstructor().newInstance(configuration);
+									if (storage.requiresFile()) {
+										FileStorageConfiguration configuration = new FileStorageConfiguration(type, section);
+										if (!configuration.validate()) {
+											Skript.error("Misconfigured database type '" + type + "'");
+											return null;
+										}
+										storage = (VariableFileStorage) optional.get().getClass().getConstructor().newInstance(configuration);
+									}	
 								} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 									Skript.error("Failed to initalize database type '" + type + "'");
 									return null;

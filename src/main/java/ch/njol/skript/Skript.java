@@ -80,7 +80,7 @@ import ch.njol.skript.util.Utils;
 import ch.njol.skript.util.Version;
 import ch.njol.skript.util.chat.BungeeConverter;
 import ch.njol.skript.util.chat.ChatMessages;
-import ch.njol.skript.variables.Variables;
+import ch.njol.skript.variables2.Variables;
 import ch.njol.util.Closeable;
 import ch.njol.util.Kleenean;
 import ch.njol.util.NullableChecker;
@@ -611,7 +611,7 @@ public final class Skript extends JavaPlugin implements Listener {
 					}
 					final long vld = System.currentTimeMillis() - vls;
 					if (logNormal())
-						info("Loaded " + Variables.numVariables() + " variables in " + ((vld / 100) / 10.) + " seconds");
+						info("Loaded " + Variables.getNumberOfVariables() + " variables in " + ((vld / 100) / 10.) + " seconds");
 				});
 				
 				// Skript initialization done
