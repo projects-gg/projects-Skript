@@ -60,6 +60,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.eclipse.jdt.annotation.Nullable;
 
+import java.io.NotSerializableException;
 import java.io.StreamCorruptedException;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -135,13 +136,6 @@ public class SkriptClasses {
 						if (ci == null)
 							throw new StreamCorruptedException("Invalid ClassInfo " + codeName);
 						return ci;
-					}
-					
-//					return c.getCodeName();
-					@Override
-					@Nullable
-					public ClassInfo deserialize(final String s) {
-						return Classes.getClassInfoNoError(s);
 					}
 					
 					@Override
@@ -785,16 +779,34 @@ public class SkriptClasses {
 					}
 
 				})
-				.serializer(new YggdrasilSerializer<Experience>() {
-//						return "" + xp;
+				.serializer(new Serializer<Experience>() {
+
 					@Override
 					@Nullable
-					public Experience deserialize(final String s) {
-						try {
-							return new Experience(Integer.parseInt(s));
-						} catch (final NumberFormatException e) {
-							return null;
-						}
+					protected Experience deserialize(final Fields fields) throws StreamCorruptedException {
+						return new Experience(fields.getAndRemovePrimitive("int", Integer.class));
+					}
+
+					@Override
+					public Fields serialize(Experience experience) throws NotSerializableException {
+						Fields fields = new Fields();
+						fields.putPrimitive("int", experience.getInternalXP());
+						return null;
+					}
+
+					@Override
+					public void deserialize(Experience o, Fields f) throws StreamCorruptedException, NotSerializableException {
+						assert false;
+					}
+
+					@Override
+					public boolean mustSyncDeserialization() {
+						return false;
+					}
+
+					@Override
+					protected boolean canBeInstantiated() {
+						return false;
 					}
 				}));
 

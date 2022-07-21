@@ -263,26 +263,6 @@ public class BukkitClasses {
 					public boolean canBeInstantiated() {
 						return false;
 					}
-					
-					// return b.getWorld().getName() + ":" + b.getX() + "," + b.getY() + "," + b.getZ();
-					@Override
-					@Nullable
-					public Block deserialize(final String s) {
-						final String[] split = s.split("[:,]");
-						if (split.length != 4)
-							return null;
-						final World w = Bukkit.getWorld(split[0]);
-						if (w == null)
-							return null;
-						try {
-							final int[] l = new int[3];
-							for (int i = 0; i < 3; i++)
-								l[i] = Integer.parseInt(split[i + 1]);
-							return w.getBlockAt(l[0], l[1], l[2]);
-						} catch (final NumberFormatException e) {
-							return null;
-						}
-					}
 				}));
 		
 		if (Skript.classExists("org.bukkit.block.data.BlockData")) {
@@ -426,26 +406,6 @@ public class BukkitClasses {
 					public boolean mustSyncDeserialization() {
 						return true;
 					}
-					
-					// return l.getWorld().getName() + ":" + l.getX() + "," + l.getY() + "," + l.getZ() + "|" + l.getYaw() + "/" + l.getPitch();
-					@Override
-					@Nullable
-					public Location deserialize(final String s) {
-						final String[] split = s.split("[:,|/]");
-						if (split.length != 6)
-							return null;
-						final World w = Bukkit.getWorld(split[0]);
-						if (w == null)
-							return null;
-						try {
-							final double[] l = new double[5];
-							for (int i = 0; i < 5; i++)
-								l[i] = Double.parseDouble(split[i + 1]);
-							return new Location(w, l[0], l[1], l[2], (float) l[3], (float) l[4]);
-						} catch (final NumberFormatException e) {
-							return null;
-						}
-					}
 				})
 				.cloner(Location::clone));
 		
@@ -577,13 +537,6 @@ public class BukkitClasses {
 						if (w == null)
 							throw new StreamCorruptedException("Missing world " + name);
 						return w;
-					}
-					
-					// return w.getName();
-					@Override
-					@Nullable
-					public World deserialize(final String s) {
-						return Bukkit.getWorld(s);
 					}
 					
 					@Override
@@ -791,7 +744,6 @@ public class BukkitClasses {
 				.parser(new Parser<OfflinePlayer>() {
 					@Override
 					@Nullable
-					@SuppressWarnings("deprecation")
 					public OfflinePlayer parse(final String s, final ParseContext context) {
 						if (context == ParseContext.COMMAND) {
 							if (UUID_PATTERN.matcher(s).matches())
@@ -845,8 +797,7 @@ public class BukkitClasses {
 					public boolean canBeInstantiated() {
 						return false;
 					}
-					
-					@SuppressWarnings("deprecation")
+
 					@Override
 					protected OfflinePlayer deserialize(final Fields fields) throws StreamCorruptedException {
 						if (fields.contains("uuid")) {
@@ -860,14 +811,6 @@ public class BukkitClasses {
 								throw new StreamCorruptedException();
 							return Bukkit.getOfflinePlayer(name);
 						}
-					}
-					
-					// return p.getName();
-					@SuppressWarnings("deprecation")
-					@Override
-					@Nullable
-					public OfflinePlayer deserialize(final String s) {
-						return Bukkit.getOfflinePlayer(s);
 					}
 					
 					@Override
@@ -1190,13 +1133,6 @@ public class BukkitClasses {
 						return t;
 					}
 					
-					// return o.getName();
-					@Override
-					@Nullable
-					public PotionEffectType deserialize(final String s) {
-						return PotionEffectType.getByName(s);
-					}
-					
 					@Override
 					public boolean mustSyncDeserialization() {
 						return false;
@@ -1292,25 +1228,6 @@ public class BukkitClasses {
 						return w.getChunkAt(x, z);
 					}
 					
-					// return c.getWorld().getName() + ":" + c.getX() + "," + c.getZ();
-					@Override
-					@Nullable
-					public Chunk deserialize(final String s) {
-						final String[] split = s.split("[:,]");
-						if (split.length != 3)
-							return null;
-						final World w = Bukkit.getWorld(split[0]);
-						if (w == null)
-							return null;
-						try {
-							final int x = Integer.parseInt(split[1]);
-							final int z = Integer.parseInt(split[1]);
-							return w.getChunkAt(x, z);
-						} catch (final NumberFormatException e) {
-							return null;
-						}
-					}
-					
 					@Override
 					public boolean mustSyncDeserialization() {
 						return true;
@@ -1369,13 +1286,6 @@ public class BukkitClasses {
 						if (e == null)
 							throw new StreamCorruptedException("Invalid enchantment " + key);
 						return e;
-					}
-					
-					// return "" + e.getId();
-					@Override
-					@Nullable
-					public Enchantment deserialize(String s) {
-						return Enchantment.getByName(s);
 					}
 					
 					@Override

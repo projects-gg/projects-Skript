@@ -1,4 +1,4 @@
-package ch.njol.skript.variables2;
+package ch.njol.skript.variables2.storages;
 
 import java.util.concurrent.ForkJoinPool;
 
@@ -8,6 +8,9 @@ import org.eclipse.jdt.annotation.Nullable;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+
+import ch.njol.skript.variables2.StorageConfiguration;
+import ch.njol.skript.variables2.VariableStorage;
 
 /**
  * Variable storage implementation based on Caffeine library for ram caching.

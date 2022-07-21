@@ -140,25 +140,24 @@ public abstract class Serializer<T> extends YggdrasilSerializer<T> {
 	 * @throws StreamCorruptedException If the given data is invalid or incomplete
 	 * @throws NotSerializableException
 	 */
-	@SuppressWarnings("unused")
 	protected T deserialize(final Fields fields) throws StreamCorruptedException, NotSerializableException {
 		throw new SkriptAPIException("deserialize(Fields) has not been overridden in " + getClass() + " (serializer of " + info + ")");
 	}
 	
-	/**
-	 * Deserialises an object from a string returned by this serializer or an earlier version thereof.
-	 * <p>
-	 * This method should only return null if the input is invalid (i.e. not produced by {@link #serialize(Object)} or an older version of that method)
-	 * <p>
-	 * This method must only be called from Bukkit's main thread if {@link #mustSyncDeserialization()} returned true.
-	 * 
-	 * @param s
-	 * @return The deserialised object or null if the input is invalid. An error message may be logged to specify the cause.
-	 */
-	@Deprecated
-	@Nullable
-	public T deserialize(final String s) {
-		return null; // if this method is not overridden then no objects of this class will ever have been saved using the old format, so any input is invalid.
-	}
+//	/**
+//	 * Deserialises an object from a string returned by this serializer or an earlier version thereof.
+//	 * <p>
+//	 * This method should only return null if the input is invalid (i.e. not produced by {@link #serialize(Object)} or an older version of that method)
+//	 * <p>
+//	 * This method must only be called from Bukkit's main thread if {@link #mustSyncDeserialization()} returned true.
+//	 * 
+//	 * @param s
+//	 * @return The deserialised object or null if the input is invalid. An error message may be logged to specify the cause.
+//	 */
+//	@Deprecated
+//	@Nullable
+//	public T deserialize(final String s) {
+//		return null; // if this method is not overridden then no objects of this class will ever have been saved using the old format, so any input is invalid.
+//	}
 	
 }

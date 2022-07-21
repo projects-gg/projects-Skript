@@ -4,7 +4,6 @@ import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.config.SectionNode;
-import ch.njol.skript.variables.Variables;
 import ch.njol.util.Closeable;
 
 /**
@@ -16,29 +15,27 @@ public abstract class VariableStorage implements Closeable {
 	protected StorageConfiguration configuration;
 
 	/**
-	 * The constructor for a storage. The constructor should only be used for setting final fields based on configurations.
-	 * Use the {@link #initialize()} method for starting up the database. Errors can be called in this constructor. Logger on.
-	 * 
-	 * @param configuration The StorageConfiguration for this storage.
+	 * Used internally by Skript to modify the configuration field.
 	 */
-	public VariableStorage(StorageConfiguration configuration) {
+	final void reloadConfiguration(StorageConfiguration configuration) {
+		loadConfiguration(configuration);
 		this.configuration = configuration;
 	}
 
 	/**
-	 * Used internally by Skript to modify the configuration field.
+	 * Skript supports reloading of storage configurations so thus any storage implementation must abide by configuration changes.
+	 * The StorageConfiguration field is updated after this method to allow for comparing changes. The argument provided is the new updated configuration.
+	 * 
+	 * @param configuration The new StorageConfiguration
 	 */
-	final void reloadConfiguration(StorageConfiguration configuration) {
-		onReload(configuration);
-		this.configuration = configuration;
-	}
+	abstract void loadConfiguration(StorageConfiguration configuration);
 
 	/**
 	 * If this stroage requires a file.
 	 * 
 	 * @return boolean if this storage requires a file.
 	 */
-	public abstract boolean requiresFile();
+	abstract boolean requiresFile();
 
 	/**
 	 * Return the StorageConfiguration for this storage which contains the user's values from the config.sk
@@ -50,44 +47,11 @@ public abstract class VariableStorage implements Closeable {
 	}
 
 	/**
-	 * Skript supports reloading of storage configurations so thus any storage implementation must abide by configuration changes.
-	 * The StorageConfiguration field is updated after this method to allow for comparing changes. The argument provided is the new updated configuration.
-	 * 
-	 * @param configuration The new StorageConfiguration
-	 */
-	abstract void onReload(StorageConfiguration configuration);
-
-	/**
 	 * Called after creation of the class.
 	 * 
 	 * @return boolean true if the initialize was successful.
 	 */
-	abstract boolean initialize();
-
-	/**
-	 * Gets a variable with given name.
-	 * @param name Name of variable.
-	 * @param event Event associated with the variable.
-	 * @param local If it is a local variable or not.
-	 * @return Variable or null if not found.
-	 */
-	@Nullable
-	abstract Object getVariable(String name, @Nullable Event event, boolean local);
-
-	/**
-	 * Sets a variable with given name.
-	 * @param name Name of variable.
-	 * @param event Event associated with the variable.
-	 * @param local If it is a local variable or not.
-	 * @param value New value. Can be null to remove the variable.
-	 */
-	abstract void setVariable(String name, @Nullable Event event, boolean local, @Nullable Object value);
-
-	/**
-	 * Flushes all variables to storage from memory. This should be called on
-	 * server shutdown, but rarely else.
-	 */
-	abstract void flush();
+	public abstract boolean initialize();
 
 	/**
 	 * (Re)connects to the database (not called on the first connect - do this in {@link #load_i(SectionNode)}).
@@ -100,5 +64,30 @@ public abstract class VariableStorage implements Closeable {
 	 * Disconnects from the database.
 	 */
 	protected abstract void disconnect();
+
+	/**
+	 * Gets a variable with given name.
+	 * @param name Name of variable.
+	 * @param event Event associated with the variable.
+	 * @param local If it is a local variable or not.
+	 * @return Variable or null if not found.
+	 */
+	@Nullable
+	public abstract Object getVariable(String name, @Nullable Event event, boolean local);
+
+	/**
+	 * Sets a variable with given name.
+	 * @param name Name of variable.
+	 * @param event Event associated with the variable.
+	 * @param local If it is a local variable or not.
+	 * @param value New value. Can be null to remove the variable.
+	 */
+	public abstract void setVariable(String name, @Nullable Event event, boolean local, @Nullable Object value);
+
+	/**
+	 * Flushes all variables to storage from memory. This should be called on
+	 * server shutdown, but rarely else.
+	 */
+	public abstract void flush();
 
 }

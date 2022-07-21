@@ -789,26 +789,4 @@ public abstract class Classes {
 		}
 	}
 	
-	/**
-	 * Deserialises an object.
-	 * <p>
-	 * This method must only be called from Bukkits main thread!
-	 * 
-	 * @param type
-	 * @param value
-	 * @return Deserialised value or null if the input is invalid
-	 */
-	@Deprecated
-	@Nullable
-	public static Object deserialize(final String type, final String value) {
-		assert Bukkit.isPrimaryThread();
-		final ClassInfo<?> ci = getClassInfoNoError(type);
-		if (ci == null)
-			return null;
-		final Serializer<?> s = ci.getSerializer();
-		if (s == null)
-			return null;
-		return s.deserialize(value);
-	}
-	
 }

@@ -18,8 +18,10 @@
  */
 package ch.njol.skript.variables2;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -50,6 +52,7 @@ import ch.njol.skript.config.Node;
 import ch.njol.skript.config.SectionNode;
 import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.registrations.Classes;
+import ch.njol.skript.util.Utils;
 import ch.njol.util.Closeable;
 import ch.njol.util.Kleenean;
 import ch.njol.util.NonNullPair;
@@ -63,6 +66,7 @@ public class Variables {
 	public final static Yggdrasil yggdrasil = new Yggdrasil(YGGDRASIL_VERSION);
 
 	private final static Multimap<Class<? extends VariableStorage>, String> types = HashMultimap.create();
+	private static final List<VersionVariableUpdate> VERSION_UPDATES = new ArrayList<>();
 
 	static {
 		Skript.closeOnDisable(new Closeable() {
@@ -71,6 +75,14 @@ public class Variables {
 				close();
 			}
 		});
+		try {
+			for (Class<?> clazz : Utils.loadClasses("ch.njol.skript.variables2", "versionchanges")) {
+				VERSION_UPDATES.add((VersionVariableUpdate) clazz.getConstructor().newInstance());
+			}
+			VERSION_UPDATES.sort(Comparator.comparing(VersionVariableUpdate::getOldSkriptVersion).reversed());
+		} catch (IOException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			Skript.exception(e, "Failed to load versionchanges classes");
+		}
 //		registerStorage(FlatFileStorage.class, "csv", "file", "flatfile");
 //		registerStorage(SQLiteStorage.class, "sqlite");
 //		registerStorage(MySQLStorage.class, "mysql");

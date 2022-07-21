@@ -99,29 +99,4 @@ public class ConfigurationSerializer<T extends ConfigurationSerializable> extend
 		assert false;
 	}
 	
-	@Override
-	@Deprecated
-	@Nullable
-	public T deserialize(final String s) {
-		final ClassInfo<? extends T> info = this.info;
-		assert info != null;
-		return deserializeCSOld(s, info.getC());
-	}
-	
-	@SuppressWarnings("unchecked")
-	@Deprecated
-	@Nullable
-	public static <T extends ConfigurationSerializable> T deserializeCSOld(final String s, final Class<T> c) {
-		final YamlConfiguration y = new YamlConfiguration();
-		try {
-			y.loadFromString(s.replace("\uFEFF", "\n"));
-		} catch (final InvalidConfigurationException e) {
-			return null;
-		}
-		final Object o = y.get("value");
-		if (!c.isInstance(o))
-			return null;
-		return (T) o;
-	}
-	
 }

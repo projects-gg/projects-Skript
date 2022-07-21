@@ -167,20 +167,10 @@ public final class SkriptAddon {
 		if (file != null)
 			return file;
 		try {
-			final Method getFile = JavaPlugin.class.getDeclaredMethod("getFile");
-			getFile.setAccessible(true);
-			file = (File) getFile.invoke(plugin);
-			return file;
-		} catch (final NoSuchMethodException e) {
-			Skript.outdatedError(e);
-		} catch (final IllegalArgumentException e) {
-			Skript.outdatedError(e);
-		} catch (final IllegalAccessException e) {
-			assert false;
-		} catch (final SecurityException e) {
-			throw new RuntimeException(e);
-		} catch (final InvocationTargetException e) {
-			throw new RuntimeException(e.getCause());
+			return Utils.getSkriptJar();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		return null;
 	}

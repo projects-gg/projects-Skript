@@ -20,19 +20,8 @@ public abstract class VariableFileStorage extends VariableStorage implements Clo
 	protected FileStorageConfiguration configuration;
 	protected File file;
 
-	/**
-	 * The constructor for a storage. The constructor should only be used for setting final fields based on configurations.
-	 * Use the {@link #initialize()} method for starting up the database. Errors can be called in this constructor. Logger on.
-	 * 
-	 * @param configuration The StorageConfiguration for this storage.
-	 */
-	public VariableFileStorage(FileStorageConfiguration configuration) {
-		super(configuration);
-		this.configuration = configuration;
-	}
-
 	@Override
-	final boolean initialize() {
+	public final boolean initialize() {
 		File file = getFile(configuration.getFilePath()).getAbsoluteFile();
 		this.file = file;
 		if (file.exists() && !file.isFile()) {
@@ -67,33 +56,31 @@ public abstract class VariableFileStorage extends VariableStorage implements Clo
 	@Nullable
 	protected Task backupTask;
 
-	void startBackupTask(Timespan timespan) {
+	protected void startBackupTask(Timespan timespan) {
 		if (file == null || timespan.getTicks_i() == 0)
 			return;
 		backupTask = new Task(Skript.getInstance(), timespan.getTicks_i(), timespan.getTicks_i(), true) {
 			@Override
 			public void run() {
-				synchronized (connectionLock) {
-					disconnect();
-					try {
-						FileUtils.backup(file);
-					} catch (final IOException e) {
-						Skript.error("Automatic variables backup failed: " + e.getLocalizedMessage());
-					} finally {
-						connect();
-					}
+				disconnect();
+				try {
+					FileUtils.backup(file);
+				} catch (final IOException e) {
+					Skript.error("Automatic variables backup failed: " + e.getLocalizedMessage());
+				} finally {
+					connect();
 				}
 			}
 		};
 	}
 
-	abstract boolean initialize(File file);
+	public abstract boolean initialize(File file);
 
 	/**
 	 * Used internally by Skript to modify the configuration field.
 	 */
 	final void reloadConfiguration(FileStorageConfiguration configuration) {
-		onReload(configuration);
+		loadConfiguration(configuration);
 		this.configuration = configuration;
 	}
 
@@ -126,11 +113,11 @@ public abstract class VariableFileStorage extends VariableStorage implements Clo
 	 * 
 	 * @param configuration The new FileStorageConfiguration
 	 */
-	abstract void onReload(FileStorageConfiguration configuration);
+	public abstract void loadConfiguration(FileStorageConfiguration configuration);
 
 	@Override
-	final void onReload(StorageConfiguration configuration) {
-		this.onReload((FileStorageConfiguration) configuration);
+	final void loadConfiguration(StorageConfiguration configuration) {
+		this.loadConfiguration((FileStorageConfiguration) configuration);
 	}
 
 }

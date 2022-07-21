@@ -26,6 +26,8 @@ import ch.njol.skript.localization.LanguageChangeListener;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.util.*;
 import ch.njol.util.coll.CollectionUtils;
+import ch.njol.util.coll.iterator.EnumerationIterable;
+
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
@@ -36,11 +38,17 @@ import org.bukkit.entity.Creature;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.Messenger;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.bukkit.util.Vector;
 import org.eclipse.jdt.annotation.Nullable;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -48,6 +56,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -62,6 +72,74 @@ public abstract class Utils {
 	private Utils() {}
 	
 	public final static Random random = new Random();
+	
+	public static List<Class<?>> loadClasses(String basePackage, String... subPackages) throws IOException {
+		assert subPackages != null;
+		JarFile jar = new JarFile(getSkriptJar());
+		for (int i = 0; i < subPackages.length; i++)
+			subPackages[i] = subPackages[i].replace('.', '/') + "/";
+		basePackage = basePackage.replace('.', '/') + "/";
+		List<Class<?>> classes = new ArrayList<>();
+		try {
+			List<String> classNames = new ArrayList<>();
+
+			for (JarEntry e : new EnumerationIterable<>(jar.entries())) {
+				if (e.getName().startsWith(basePackage) && e.getName().endsWith(".class")) {
+					boolean load = subPackages.length == 0;
+					for (String sub : subPackages) {
+						if (e.getName().startsWith(sub, basePackage.length())) {
+							load = true;
+							break;
+						}
+					}
+
+					if (load)
+						classNames.add(e.getName().replace('/', '.').substring(0, e.getName().length() - ".class".length()));
+				}
+			}
+
+			classNames.sort(String::compareToIgnoreCase);
+
+			for (String c : classNames) {
+				try {
+					classes.add(Class.forName(c, true, Skript.getInstance().getClass().getClassLoader()));
+				} catch (ClassNotFoundException ex) {
+					Skript.exception(ex, "Cannot load class " + c);
+				} catch (ExceptionInInitializerError err) {
+					Skript.exception(err.getCause(), "class " + c + " generated an exception while loading");
+				}
+			}
+		} finally {
+			try {
+				jar.close();
+			} catch (IOException e) {}
+		}
+		return classes;
+	}
+	
+	/**
+	 * @return The jar file of the plugin. The first invocation of this method uses reflection to invoke the protected method {@link JavaPlugin#getFile()} to get the plugin's jar
+	 *         file. The file is then cached and returned upon subsequent calls to this method to reduce usage of reflection.
+	 */
+	@Nullable
+	public static File getSkriptJar() {
+		try {
+			Method getFile = JavaPlugin.class.getDeclaredMethod("getFile");
+			getFile.setAccessible(true);
+			return (File) getFile.invoke(Skript.getInstance());
+		} catch (final NoSuchMethodException e) {
+			Skript.outdatedError(e);
+		} catch (final IllegalArgumentException e) {
+			Skript.outdatedError(e);
+		} catch (final IllegalAccessException e) {
+			assert false;
+		} catch (final SecurityException e) {
+			throw new RuntimeException(e);
+		} catch (final InvocationTargetException e) {
+			throw new RuntimeException(e.getCause());
+		}
+		return null;
+	}
 	
 	public static String join(final Object[] objects) {
 		assert objects != null;
