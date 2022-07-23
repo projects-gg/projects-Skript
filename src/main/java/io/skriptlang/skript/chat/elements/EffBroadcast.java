@@ -47,6 +47,7 @@ import java.util.List;
 	"broadcast \"Woah! It's a message!\""
 })
 @Since("1.0, 2.6 (broadcasting objects), 2.6.1 (using advanced formatting)")
+// TODO see what might need taken from https://github.com/SkriptLang/Skript/pull/4545
 public class EffBroadcast extends Effect {
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
