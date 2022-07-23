@@ -16,7 +16,7 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package io.skriptlang.skript.chat.elements;
+package org.skriptlang.skript.bukkit.chat.elements;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
@@ -28,7 +28,7 @@ import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.util.Timespan;
 import ch.njol.util.Kleenean;
-import io.skriptlang.skript.chat.util.ComponentHandler;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.title.Title;
 import net.kyori.adventure.title.Title.Times;
@@ -52,6 +52,7 @@ import java.time.Duration;
 		"send subtitle \"Party!\" to all players"
 })
 @Since("2.3, INSERT VERSION (sending objects)")
+// TODO see what might need taken from https://github.com/SkriptLang/Skript/pull/4362
 public class EffSendTitle extends Effect {
 
 	static {

@@ -16,7 +16,7 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package io.skriptlang.skript.chat.util;
+package org.skriptlang.skript.bukkit.chat.util;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.lang.Expression;
@@ -318,6 +318,7 @@ public class ComponentHandler {
 	public static BukkitAudiences getAdventure() {
 		if (adventure == null)
 			adventure = BukkitAudiences.create(Skript.getInstance());
+		// TODO we might need to close this ('adventure.close()')
 		return adventure;
 	}
 

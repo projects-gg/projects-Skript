@@ -17,7 +17,7 @@
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
 @NonNullByDefault({DefaultLocation.PARAMETER, DefaultLocation.RETURN_TYPE, DefaultLocation.FIELD})
-package io.skriptlang.skript.chat.util;
+package org.skriptlang.skript.bukkit.chat;
 
 import org.eclipse.jdt.annotation.DefaultLocation;
 import org.eclipse.jdt.annotation.NonNullByDefault;

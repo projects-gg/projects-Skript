@@ -16,7 +16,7 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package io.skriptlang.skript.chat;
+package org.skriptlang.skript.bukkit.chat;
 
 import ch.njol.skript.SkriptAddon;
 import ch.njol.skript.classes.ClassInfo;
@@ -24,19 +24,15 @@ import ch.njol.skript.classes.Parser;
 import ch.njol.skript.lang.ParseContext;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.registrations.Converters;
-import io.skriptlang.skript.chat.util.ComponentHandler;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.Tag;
-import net.kyori.adventure.text.minimessage.tag.Tag.Argument;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
-import static io.skriptlang.skript.chat.util.ComponentHandler.registerPlaceholder;
-
-public class ChatRegistration {
+public class ChatModule {
 
 	public void register(SkriptAddon addon) {
 
@@ -74,41 +70,41 @@ public class ChatRegistration {
 		// Just to initialize it now
 		ComponentHandler.getAdventure();
 
-		registerPlaceholder("dark_cyan", "<dark_aqua>");
-		registerPlaceholder("dark_turquoise", "<dark_aqua>");
-		registerPlaceholder("cyan", "<dark_aqua>");
+		ComponentHandler.registerPlaceholder("dark_cyan", "<dark_aqua>");
+		ComponentHandler.registerPlaceholder("dark_turquoise", "<dark_aqua>");
+		ComponentHandler.registerPlaceholder("cyan", "<dark_aqua>");
 
-		registerPlaceholder("purple", "<dark_purple>");
+		ComponentHandler.registerPlaceholder("purple", "<dark_purple>");
 
-		registerPlaceholder("dark_yellow", "<gold>");
-		registerPlaceholder("orange", "<gold>");
+		ComponentHandler.registerPlaceholder("dark_yellow", "<gold>");
+		ComponentHandler.registerPlaceholder("orange", "<gold>");
 
-		registerPlaceholder("light_grey", "<grey>");
-		registerPlaceholder("light_gray", "<grey>");
-		registerPlaceholder("silver", "<grey>");
+		ComponentHandler.registerPlaceholder("light_grey", "<grey>");
+		ComponentHandler.registerPlaceholder("light_gray", "<grey>");
+		ComponentHandler.registerPlaceholder("silver", "<grey>");
 
-		registerPlaceholder("dark_silver", "<dark_grey>");
+		ComponentHandler.registerPlaceholder("dark_silver", "<dark_grey>");
 
-		registerPlaceholder("light_blue", "<blue>");
-		registerPlaceholder("indigo", "<blue>");
+		ComponentHandler.registerPlaceholder("light_blue", "<blue>");
+		ComponentHandler.registerPlaceholder("indigo", "<blue>");
 
-		registerPlaceholder("light_green", "<green>");
-		registerPlaceholder("lime_green", "<green>");
-		registerPlaceholder("lime", "<green>");
+		ComponentHandler.registerPlaceholder("light_green", "<green>");
+		ComponentHandler.registerPlaceholder("lime_green", "<green>");
+		ComponentHandler.registerPlaceholder("lime", "<green>");
 
-		registerPlaceholder("light_cyan", "<aqua>");
-		registerPlaceholder("light_aqua", "<aqua>");
-		registerPlaceholder("turquoise", "<aqua>");
+		ComponentHandler.registerPlaceholder("light_cyan", "<aqua>");
+		ComponentHandler.registerPlaceholder("light_aqua", "<aqua>");
+		ComponentHandler.registerPlaceholder("turquoise", "<aqua>");
 
-		registerPlaceholder("light_red", "<red>");
+		ComponentHandler.registerPlaceholder("light_red", "<red>");
 
 
-		registerPlaceholder("pink", "<light_purple>");
-		registerPlaceholder("magenta", "<light_purple>");
+		ComponentHandler.registerPlaceholder("pink", "<light_purple>");
+		ComponentHandler.registerPlaceholder("magenta", "<light_purple>");
 
-		registerPlaceholder("light_yellow", "<yellow>");
+		ComponentHandler.registerPlaceholder("light_yellow", "<yellow>");
 
-		registerPlaceholder("underline", "<underlined>");
+		ComponentHandler.registerPlaceholder("underline", "<underlined>");
 
 		ComponentHandler.registerResolver(TagResolver.resolver("unicode", (argumentQueue, context) -> {
 			String unicode = argumentQueue.popOr("A unicode tag must have an argument of the unicode").value();

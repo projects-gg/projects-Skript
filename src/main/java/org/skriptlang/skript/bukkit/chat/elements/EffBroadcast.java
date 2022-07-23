@@ -16,7 +16,7 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package io.skriptlang.skript.chat.elements;
+package org.skriptlang.skript.bukkit.chat.elements;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
@@ -29,7 +29,7 @@ import ch.njol.skript.lang.ExpressionList;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.Kleenean;
-import io.skriptlang.skript.chat.util.ComponentHandler;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.Bukkit;
 import org.bukkit.World;

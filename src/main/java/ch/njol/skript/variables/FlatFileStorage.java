@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.skriptlang.skript.chat.util.ComponentHandler;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.Skript;
@@ -45,7 +45,6 @@ import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.ExceptionUtils;
 import ch.njol.skript.util.FileUtils;
 import ch.njol.skript.util.Task;
-import ch.njol.skript.util.Utils;
 import ch.njol.skript.util.Version;
 import ch.njol.util.NotifyingReference;
 

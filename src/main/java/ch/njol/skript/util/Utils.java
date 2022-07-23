@@ -52,6 +52,7 @@ import ch.njol.util.Pair;
 import ch.njol.util.StringUtils;
 import ch.njol.util.coll.CollectionUtils;
 import net.md_5.bungee.api.ChatColor;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 
 /**
  * Utility class.
@@ -481,7 +482,7 @@ public abstract class Utils {
 	 * 
 	 * @param message
 	 * @return message with localised chat styles converted to Minecraft's format
-	 * @deprecated Use {@link io.skriptlang.skript.chat.util.ComponentHandler#toLegacyString(String)}
+	 * @deprecated Use {@link ComponentHandler#toLegacyString(String)}
 	 */
 	@Deprecated
 	public static String replaceChatStyles(final String message) {
@@ -521,7 +522,7 @@ public abstract class Utils {
 	 * 
 	 * @param message
 	 * @return message with english chat styles converted to Minecraft's format
-	 * @deprecated Use {@link io.skriptlang.skript.chat.util.ComponentHandler#toLegacyString(String)}
+	 * @deprecated Use {@link ComponentHandler#toLegacyString(String)}
 	 */
 	public static String replaceEnglishChatStyles(final String message) {
 		if (message.isEmpty())

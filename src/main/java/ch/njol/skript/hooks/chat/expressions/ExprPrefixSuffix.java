@@ -18,7 +18,7 @@
  */
 package ch.njol.skript.hooks.chat.expressions;
 
-import io.skriptlang.skript.chat.util.ComponentHandler;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
@@ -32,7 +32,6 @@ import ch.njol.skript.expressions.base.SimplePropertyExpression;
 import ch.njol.skript.hooks.VaultHook;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.util.Utils;
 import ch.njol.util.Kleenean;
 
 /**

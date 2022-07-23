@@ -33,7 +33,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
-import io.skriptlang.skript.chat.util.ComponentHandler;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;

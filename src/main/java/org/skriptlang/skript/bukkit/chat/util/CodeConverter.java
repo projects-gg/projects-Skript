@@ -16,7 +16,7 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package io.skriptlang.skript.chat.util;
+package org.skriptlang.skript.bukkit.chat.util;
 
 import org.eclipse.jdt.annotation.Nullable;
 

@@ -16,7 +16,7 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package io.skriptlang.skript.chat.elements;
+package org.skriptlang.skript.bukkit.chat.elements;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
@@ -30,7 +30,7 @@ import ch.njol.skript.lang.ExpressionList;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.Kleenean;
-import io.skriptlang.skript.chat.util.ComponentHandler;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.text.Component;
@@ -61,6 +61,7 @@ import java.util.List;
 })
 @RequiredPlugins("Minecraft 1.16.4+ for optional sender")
 @Since("1.0, 2.2-dev26 (advanced features), 2.5.2 (optional sender), 2.6 (sending objects)")
+// See what might need taken from https://github.com/SkriptLang/Skript/pull/4545
 public class EffMessage extends Effect {
 
 	static {

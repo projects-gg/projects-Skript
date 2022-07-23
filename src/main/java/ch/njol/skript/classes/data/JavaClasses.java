@@ -31,7 +31,7 @@ import ch.njol.skript.localization.RegexMessage;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.util.StringUtils;
 import ch.njol.yggdrasil.Fields;
-import io.skriptlang.skript.chat.util.ComponentHandler;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import org.eclipse.jdt.annotation.Nullable;
 
 import java.util.regex.Pattern;

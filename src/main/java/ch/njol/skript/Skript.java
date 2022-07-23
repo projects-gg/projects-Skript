@@ -53,8 +53,8 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import ch.njol.skript.lang.Section;
-import io.skriptlang.skript.chat.ChatRegistration;
-import io.skriptlang.skript.chat.util.ComponentHandler;
+import org.skriptlang.skript.bukkit.chat.ChatModule;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bstats.bukkit.Metrics;
@@ -102,7 +102,6 @@ import ch.njol.skript.lang.Effect;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.ExpressionInfo;
 import ch.njol.skript.lang.ExpressionType;
-import ch.njol.skript.lang.Section;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptEventInfo;
 import ch.njol.skript.lang.Statement;
@@ -510,7 +509,7 @@ public final class Skript extends JavaPlugin implements Listener {
 		
 		try {
 			getAddonInstance().loadClasses("ch.njol.skript", "conditions", "effects", "events", "expressions", "entity", "sections");
-			new ChatRegistration().register(getAddonInstance()); // TODO remove eventually
+			new ChatModule().register(getAddonInstance()); // TODO remove eventually
 		} catch (final Exception e) {
 			exception(e, "Could not load required .class files: " + e.getLocalizedMessage());
 			setEnabled(false);
