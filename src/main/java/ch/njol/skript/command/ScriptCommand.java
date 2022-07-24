@@ -207,7 +207,7 @@ public class ScriptCommand implements TabExecutor {
 		final ScriptCommandEvent event = new ScriptCommandEvent(ScriptCommand.this, sender);
 
 		if (!permission.isEmpty() && !sender.hasPermission(permission)) {
-			ComponentHandler.audienceFrom(sender).sendMessage(ComponentHandler.parseFromSingleExpression(event, permissionMessage));
+			sender.sendMessage(ComponentHandler.parseFromSingleExpression(event, permissionMessage));
 			return false;
 		}
 

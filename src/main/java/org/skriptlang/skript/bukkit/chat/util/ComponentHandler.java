@@ -18,13 +18,9 @@
  */
 package org.skriptlang.skript.bukkit.chat.util;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.VariableString;
 import ch.njol.skript.registrations.Classes;
-import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-import net.kyori.adventure.platform.bukkit.BukkitComponentSerializer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.Context;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -33,14 +29,13 @@ import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.ArgumentQueue;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.minimessage.tag.standard.StandardTags;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bukkit.command.CommandSender;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -303,53 +298,20 @@ public class ComponentHandler {
 		return toLegacyString(parse(string, !all));
 	}
 
+	private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.builder()
+		.hexColors()
+		.hexCharacter(LegacyComponentSerializer.HEX_CHAR)
+		.character(LegacyComponentSerializer.SECTION_CHAR)
+		.useUnusualXRepeatedCharacterHexFormat()
+		.build();
+
 	/**
 	 * Converts a component into a legacy formatted string.
 	 * @param component The component to convert.
 	 * @return The legacy string.
 	 */
 	public static String toLegacyString(Component component) {
-		return BukkitComponentSerializer.legacy().serialize(component);
-	}
-
-	@Nullable
-	private static BukkitAudiences adventure = null; // Can't set here as we need an instance of Skript
-
-	public static BukkitAudiences getAdventure() {
-		if (adventure == null)
-			adventure = BukkitAudiences.create(Skript.getInstance());
-		// TODO we might need to close this ('adventure.close()')
-		return adventure;
-	}
-
-	/**
-	 * Constructs an audience from command senders.
-	 * @param senders The members of this audience.
-	 * @return An audience consisting of the provided command senders.
-	 */
-	@SuppressWarnings("ConstantConditions")
-	public static Audience audienceFrom(Collection<CommandSender> senders) {
-		List<Audience> bukkitAudiences = new ArrayList<>();
-		for (CommandSender sender : senders) {
-			if (sender instanceof Audience) { // On paper, a CommandSender is an Audience
-				bukkitAudiences.add(sender);
-			} else {
-				bukkitAudiences.add(getAdventure().sender(sender));
-			}
-		}
-		return Audience.audience(bukkitAudiences);
-	}
-
-	/**
-	 * Constructs an audience from command senders.
-	 * @param senders The members of this audience.
-	 * @return An audience consisting of the provided command senders.
-	 */
-	public static Audience audienceFrom(CommandSender... senders) {
-		List<Audience> bukkitAudiences = new ArrayList<>();
-		for (CommandSender sender : senders)
-			bukkitAudiences.add(getAdventure().sender(sender));
-		return Audience.audience(bukkitAudiences);
+		return LEGACY_SERIALIZER.serialize(component);
 	}
 
 }

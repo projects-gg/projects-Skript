@@ -29,6 +29,8 @@ import ch.njol.skript.lang.ExpressionList;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.Kleenean;
+import ch.njol.util.coll.CollectionUtils;
+import net.kyori.adventure.text.Component;
 import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.Bukkit;
@@ -47,13 +49,12 @@ import java.util.List;
 	"broadcast \"Woah! It's a message!\""
 })
 @Since("1.0, 2.6 (broadcasting objects), 2.6.1 (using advanced formatting)")
-// TODO see what might need taken from https://github.com/SkriptLang/Skript/pull/4545
 public class EffBroadcast extends Effect {
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
 	private Expression<?>[] messages;
 	@SuppressWarnings("NotNullFieldNotInitialized")
-	private Expression<?> messageExpr; // Used in toString
+	private Expression<?> messageExpr;
 	@Nullable
 	private Expression<World> worlds;
 
@@ -65,24 +66,34 @@ public class EffBroadcast extends Effect {
 	@SuppressWarnings("unchecked")
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
 		messageExpr = LiteralUtils.defendExpression(exprs[0]);
-		messages = messageExpr instanceof ExpressionList ?
-			((ExpressionList<?>) messageExpr).getExpressions() : new Expression[]{messageExpr};
+		if (messageExpr instanceof ExpressionList) {
+			ExpressionList<?> exprList = (ExpressionList<?>) messageExpr;
+			if (exprList.getAnd()) {
+				messages = exprList.getExpressions();
+			} else {
+				messages = new Expression[]{CollectionUtils.getRandom(exprList.getExpressions())};
+			}
+		} else {
+			messages = new Expression[]{messageExpr};
+		}
+
 		worlds = (Expression<World>) exprs[1];
 		return LiteralUtils.canInitSafely(messageExpr);
 	}
 
 	@Override
 	protected void execute(Event e) {
-		List<CommandSender> recipients = new ArrayList<>();
 		if (worlds == null) {
-			recipients.addAll(Bukkit.getOnlinePlayers());
-			recipients.add(Bukkit.getConsoleSender());
+			for (Component component : ComponentHandler.parseFromExpressions(e, messages))
+				Bukkit.broadcast(component);
 		} else {
+			List<CommandSender> recipients = new ArrayList<>();
 			for (World world : worlds.getArray(e))
 				recipients.addAll(world.getPlayers());
+			Audience audience = Audience.audience(recipients);
+			for (Component component : ComponentHandler.parseFromExpressions(e, messages))
+				audience.sendMessage(component);
 		}
-		Audience audience = ComponentHandler.audienceFrom(recipients);
-		ComponentHandler.parseFromExpressions(e, messages).forEach(audience::sendMessage);
 	}
 
 	@Override

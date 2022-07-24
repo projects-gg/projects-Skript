@@ -30,6 +30,7 @@ import ch.njol.skript.lang.ExpressionList;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.Kleenean;
+import ch.njol.util.coll.CollectionUtils;
 import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.identity.Identity;
@@ -61,7 +62,6 @@ import java.util.List;
 })
 @RequiredPlugins("Minecraft 1.16.4+ for optional sender")
 @Since("1.0, 2.2-dev26 (advanced features), 2.5.2 (optional sender), 2.6 (sending objects)")
-// See what might need taken from https://github.com/SkriptLang/Skript/pull/4545
 public class EffMessage extends Effect {
 
 	static {
@@ -74,7 +74,7 @@ public class EffMessage extends Effect {
 	@SuppressWarnings("NotNullFieldNotInitialized")
 	private Expression<?>[] messages;
 	@SuppressWarnings("NotNullFieldNotInitialized")
-	private Expression<?> messageExpr; // Used in toString
+	private Expression<?> messageExpr;
 	@SuppressWarnings("NotNullFieldNotInitialized")
 	private Expression<CommandSender> recipients;
 
@@ -87,9 +87,19 @@ public class EffMessage extends Effect {
 	@SuppressWarnings("unchecked")
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
 		isChatMessage = matchedPattern == 0;
+
 		messageExpr = LiteralUtils.defendExpression(exprs[0]);
-		messages = messageExpr instanceof ExpressionList ?
-			((ExpressionList<?>) messageExpr).getExpressions() : new Expression[]{messageExpr};
+		if (messageExpr instanceof ExpressionList) {
+			ExpressionList<?> exprList = (ExpressionList<?>) messageExpr;
+			if (exprList.getAnd()) {
+				messages = exprList.getExpressions();
+			} else {
+				messages = new Expression[]{CollectionUtils.getRandom(exprList.getExpressions())};
+			}
+		} else {
+			messages = new Expression[]{messageExpr};
+		}
+
 		recipients = (Expression<CommandSender>) exprs[1];
 		if (isChatMessage)
 			sender = (Expression<Player>) exprs[2];
@@ -98,8 +108,7 @@ public class EffMessage extends Effect {
 
 	@Override
 	protected void execute(Event e) {
-		long start = System.nanoTime();
-		Audience audience = ComponentHandler.audienceFrom(recipients.getArray(e));
+		Audience audience = Audience.audience(recipients.getArray(e));
 
 		List<Component> components = ComponentHandler.parseFromExpressions(e, messages);
 
@@ -109,9 +118,9 @@ public class EffMessage extends Effect {
 			for (Component component : components)
 				audience.sendMessage(identity, component);
 		} else {
-			components.forEach(audience::sendActionBar);
+			for (Component component : components)
+				audience.sendActionBar(component);
 		}
-		System.out.println("TIME TO EXECUTE SEND MESSAGE: " + (1. * (System.nanoTime() - start) / 1000000.));
 	}
 
 	@Override
