@@ -31,8 +31,11 @@ import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
 
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.permissions.Permissible;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.eclipse.jdt.annotation.Nullable;
@@ -41,48 +44,86 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Name("All Permissions")
-@Description("Returns all permissions of the defined player(s). Note that the modifications to resulting list do not actually change permissions.")
+@Description("Returns all permissions of the defined permissible(s). A permissible is an object like an entity that can have permissions.")
 @Examples("set {_permissions::*} to all permissions of the player")
-@Since("2.2-dev33")
+@Since("2.2-dev33, INSERT VERSION (Changers)")
 public class ExprPermissions extends SimpleExpression<String> {
-	
+
 	static {
-		Skript.registerExpression(ExprPermissions.class, String.class, ExpressionType.PROPERTY, "[(all [[of] the]|the)] permissions (from|of) %players%", "[(all [[of] the]|the)] %players%'[s] permissions");
+		Skript.registerExpression(ExprPermissions.class, String.class, ExpressionType.PROPERTY, "[(all [[of] the]|the)] permissions (from|of) %entities%", "[(all [[of] the]|the)] %entities%'[s] permissions");
 	}
-	
-	@SuppressWarnings("null")
-	private Expression<Player> players;
-	
-	@SuppressWarnings({"null", "unchecked"})
+
+	private Expression<Entity> entities;
+
 	@Override
-	public boolean init(final Expression<?>[] exprs, final int matchedPattern, final Kleenean isDelayed, final ParseResult parseResult) {
-		players = (Expression<Player>) exprs[0];
+	@SuppressWarnings({"null", "unchecked"})
+	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
+		entities = (Expression<Entity>) exprs[0];
 		return true;
 	}
 
 	@Override
 	@Nullable
-	protected String[] get(Event e) {
-		final Set<String> permissions = new HashSet<>();
-		for (Player player : players.getArray(e))
-			for (final PermissionAttachmentInfo permission : player.getEffectivePermissions())
-				permissions.add(permission.getPermission());
-		return permissions.toArray(new String[permissions.size()]);
+	protected String[] get(Event event) {
+		return entities.stream(event)
+				.flatMap(permissible -> permissible.getEffectivePermissions().stream())
+				.map(permission -> permission.getPermission())
+				.toArray(String[]::new);
 	}
-	
+
 	@Override
 	public boolean isSingle() {
 		return false;
 	}
-	
+
 	@Override
 	public Class<String> getReturnType() {
 		return String.class;
 	}
-	
+
 	@Override
 	public String toString(@Nullable Event event, boolean debug) {
-		return "permissions " + " of " + players.toString(event, debug);
+		return "permissions " + " of " + entities.toString(event, debug);
+	}
+
+	@Override
+	public Class<?>[] acceptChange(ChangeMode mode) {
+		return CollectionUtils.array(String.class, String[].class);
+	}
+
+	@Override
+	public void change(Event event, @Nullable Object[] delta, ChangeMode mode) {
+		switch (mode) {
+			case ADD:
+				for (Entity entity : entities.getAll(event)) {
+					PermissionAttachment perm = getPermission(entity);
+					for (Object s : delta) {
+						perm.setPermission(((String) s), mode == Changer.ChangeMode.ADD);
+					}
+				}
+				break;
+			case DELETE:
+				break;
+			case REMOVE:
+				break;
+			case REMOVE_ALL:
+				break;
+			case RESET:
+				break;
+			case SET:
+				break;
+			default:
+				break;
+		}
+	}
+
+	private final String PERMISSION_TAG = "skript-permissions";
+
+	private PermissionAttachment getPermission(Entity entity) {
+		Skript instance = Skript.getInstance();
+		if (!entity.hasMetadata(PERMISSION_TAG))
+			entity.setMetadata(PERMISSION_TAG, new FixedMetadataValue(instance, entity.addAttachment(instance)));
+		return (PermissionAttachment) entity.getMetadata(PERMISSION_TAG).get(0).value();
 	}
 
 }
