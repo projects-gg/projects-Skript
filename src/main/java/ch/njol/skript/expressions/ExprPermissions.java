@@ -18,6 +18,12 @@
  */
 package ch.njol.skript.expressions;
 
+import org.bukkit.entity.Entity;
+import org.bukkit.event.Event;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.permissions.PermissionAttachment;
+import org.eclipse.jdt.annotation.Nullable;
+
 import ch.njol.skript.Skript;
 import ch.njol.skript.classes.Changer.ChangeMode;
 import ch.njol.skript.doc.Description;
@@ -30,18 +36,6 @@ import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
-
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.permissions.Permissible;
-import org.bukkit.permissions.PermissionAttachment;
-import org.bukkit.permissions.PermissionAttachmentInfo;
-import org.eclipse.jdt.annotation.Nullable;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Name("All Permissions")
 @Description("Returns all permissions of the defined permissible(s). A permissible is an object like an entity that can have permissions.")
@@ -56,7 +50,7 @@ public class ExprPermissions extends SimpleExpression<String> {
 	private Expression<Entity> entities;
 
 	@Override
-	@SuppressWarnings({"null", "unchecked"})
+	@SuppressWarnings("unchecked")
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
 		entities = (Expression<Entity>) exprs[0];
 		return true;
@@ -88,32 +82,17 @@ public class ExprPermissions extends SimpleExpression<String> {
 
 	@Override
 	public Class<?>[] acceptChange(ChangeMode mode) {
-		return CollectionUtils.array(String.class, String[].class);
+		if (mode == ChangeMode.ADD || mode == ChangeMode.REMOVE)
+			return CollectionUtils.array(String.class, String[].class);
+		return null;
 	}
 
 	@Override
 	public void change(Event event, @Nullable Object[] delta, ChangeMode mode) {
-		switch (mode) {
-			case ADD:
-				for (Entity entity : entities.getAll(event)) {
-					PermissionAttachment perm = getPermission(entity);
-					for (Object s : delta) {
-						perm.setPermission(((String) s), mode == Changer.ChangeMode.ADD);
-					}
-				}
-				break;
-			case DELETE:
-				break;
-			case REMOVE:
-				break;
-			case REMOVE_ALL:
-				break;
-			case RESET:
-				break;
-			case SET:
-				break;
-			default:
-				break;
+		for (Entity entity : entities.getAll(event)) {
+			PermissionAttachment perm = getPermission(entity);
+			for (String string : (String[]) delta)
+				perm.setPermission(string, mode == ChangeMode.ADD);
 		}
 	}
 
