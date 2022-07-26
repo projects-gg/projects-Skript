@@ -47,6 +47,9 @@ public class ExprPermissions extends SimpleExpression<String> {
 		Skript.registerExpression(ExprPermissions.class, String.class, ExpressionType.PROPERTY, "[(all [[of] the]|the)] permissions (from|of) %entities%", "[(all [[of] the]|the)] %entities%'[s] permissions");
 	}
 
+	// Metadata tag
+	private final String PERMISSION_TAG = "skript-permissions";
+
 	private Expression<Entity> entities;
 
 	@Override
@@ -95,8 +98,6 @@ public class ExprPermissions extends SimpleExpression<String> {
 				perm.setPermission(string, mode == ChangeMode.ADD);
 		}
 	}
-
-	private final String PERMISSION_TAG = "skript-permissions";
 
 	private PermissionAttachment getPermission(Entity entity) {
 		Skript instance = Skript.getInstance();
