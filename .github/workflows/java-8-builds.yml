@@ -1,4 +1,4 @@
-name: Java 17 CI (MC 1.17+)
+name: Java 8 CI (MC 1.13-1.16)
 
 on: [push, pull_request]
 
@@ -21,7 +21,7 @@ jobs:
             - name: Build Skript
               run: ./gradlew nightlyRelease
             - name: Run test scripts
-              run: ./gradlew clean skriptTestJava17
+              run: ./gradlew clean skriptTestJava8
             - name: Upload Nightly Build
               uses: actions/upload-artifact@v3
               if: success()
