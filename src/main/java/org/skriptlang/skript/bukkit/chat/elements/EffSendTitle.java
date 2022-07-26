@@ -26,6 +26,7 @@ import ch.njol.skript.doc.Since;
 import ch.njol.skript.lang.Effect;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
+import ch.njol.skript.util.LiteralUtils;
 import ch.njol.skript.util.Timespan;
 import ch.njol.util.Kleenean;
 import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
@@ -42,8 +43,8 @@ import java.time.Duration;
 @Name("Send Title")
 @Description({
 		"Sends a title/subtitle to the given player(s) with optional fadein/stay/fadeout times for Minecraft versions 1.11 and above.",
-		"Note: if no input is given for the title/subtitle or the times, " +
-			"it will keep the ones from the last title sent, use the <a href='effects.html#EffResetTitle'>reset title</a> effect to restore the default values."
+		"Note: if no input is given for the title/subtitle or the times, "
+		+ "it will keep the ones from the last title sent, use the <a href='effects.html#EffResetTitle'>reset title</a> effect to restore the default values."
 })
 @Examples({
 		"send title \"Competition Started\" with subtitle \"Have fun, Stay safe!\" to player for 5 seconds",
@@ -52,7 +53,6 @@ import java.time.Duration;
 		"send subtitle \"Party!\" to all players"
 })
 @Since("2.3, INSERT VERSION (sending objects)")
-// TODO see what might need taken from https://github.com/SkriptLang/Skript/pull/4362
 public class EffSendTitle extends Effect {
 
 	static {
@@ -74,13 +74,20 @@ public class EffSendTitle extends Effect {
 	@Override
 	@SuppressWarnings("unchecked")
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-		title = matchedPattern == 0 ? exprs[0] : null;
+		title = matchedPattern == 0 ? LiteralUtils.defendExpression(exprs[0]) : null;
 		subtitle = exprs[1 - matchedPattern];
+		if (subtitle != null)
+			LiteralUtils.defendExpression(exprs[1 - matchedPattern]);
 		recipients = (Expression<CommandSender>) exprs[2 - matchedPattern];
 		stay = (Expression<Timespan>) exprs[3 - matchedPattern];
 		fadeIn = (Expression<Timespan>) exprs[4 - matchedPattern];
 		fadeOut = (Expression<Timespan>) exprs[5 - matchedPattern];
-		return true;
+		if (title != null) {
+			if (subtitle != null)
+				return LiteralUtils.canInitSafely(title, subtitle);
+			return LiteralUtils.canInitSafely(title);
+		}
+		return LiteralUtils.canInitSafely(subtitle);
 	}
 
 	@Override
@@ -91,12 +98,11 @@ public class EffSendTitle extends Effect {
 		Timespan stay = this.stay != null ? this.stay.getSingle(e) : null;
 		Timespan fadeOut = this.fadeOut != null ? this.fadeOut.getSingle(e) : null;
 
-		// From Title#DEFAULT_TIMES
-		Duration fadeInDuration = fadeIn != null ? Ticks.duration(fadeIn.getTicks_i()) : Ticks.duration(10);
-		Duration stayDuration = stay != null ? Ticks.duration(stay.getTicks_i()) : Ticks.duration(70);
-		Duration fadeOutDuration = fadeOut != null ? Ticks.duration(fadeOut.getTicks_i()) : Ticks.duration(20);
+		Duration fadeInDuration = fadeIn != null ? Ticks.duration(fadeIn.getTicks_i()) : Title.DEFAULT_TIMES.fadeIn();
+		Duration stayDuration = stay != null ? Ticks.duration(stay.getTicks_i()) : Title.DEFAULT_TIMES.stay();
+		Duration fadeOutDuration = fadeOut != null ? Ticks.duration(fadeOut.getTicks_i()) : Title.DEFAULT_TIMES.fadeOut();
 
-		Times times = Times.of(fadeInDuration, stayDuration, fadeOutDuration);
+		Times times = Times.times(fadeInDuration, stayDuration, fadeOutDuration);
 		Title title = Title.title(ComponentHandler.parseFromSingleExpression(e, this.title), ComponentHandler.parseFromSingleExpression(e, this.subtitle), times);
 
 		audience.showTitle(title);
@@ -119,12 +125,14 @@ public class EffSendTitle extends Effect {
 		if (stay != null) {
 			builder.append(" for ").append(stay.toString(e, debug));
 		} else {
-			builder.append(" for 70 ticks");
+			long ticks = Title.DEFAULT_TIMES.stay().toMillis() / Ticks.SINGLE_TICK_DURATION_MS;
+			builder.append(" for ").append(ticks).append(" ticks");
 		}
 		if (fadeIn != null) {
 			builder.append(" with fade in ").append(fadeIn.toString(e, debug));
 		} else {
-			builder.append(" with fade in 10 ticks");
+			long ticks = Title.DEFAULT_TIMES.fadeIn().toMillis() / Ticks.SINGLE_TICK_DURATION_MS;
+			builder.append(" with fade in ").append(ticks).append(" ticks");
 		}
 		if (fadeOut != null) {
 			builder.append(" with fade out ").append(fadeOut.toString(e, debug));
@@ -134,7 +142,8 @@ public class EffSendTitle extends Effect {
 			} else {
 				builder.append(" with");
 			}
-			builder.append(" fade out 20 ticks");
+			long ticks = Title.DEFAULT_TIMES.fadeOut().toMillis() / Ticks.SINGLE_TICK_DURATION_MS;
+			builder.append(" fade out ").append(ticks).append(" ticks");
 		}
 
 		return builder.toString();

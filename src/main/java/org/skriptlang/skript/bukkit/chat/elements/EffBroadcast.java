@@ -29,6 +29,7 @@ import ch.njol.skript.lang.ExpressionList;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.Kleenean;
+import ch.njol.util.coll.CollectionUtils;
 import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.Bukkit;
@@ -47,7 +48,6 @@ import java.util.List;
 	"broadcast \"Woah! It's a message!\""
 })
 @Since("1.0, 2.6 (broadcasting objects), 2.6.1 (using advanced formatting)")
-// TODO see what might need taken from https://github.com/SkriptLang/Skript/pull/4545
 public class EffBroadcast extends Effect {
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
@@ -65,8 +65,19 @@ public class EffBroadcast extends Effect {
 	@SuppressWarnings("unchecked")
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
 		messageExpr = LiteralUtils.defendExpression(exprs[0]);
-		messages = messageExpr instanceof ExpressionList ?
-			((ExpressionList<?>) messageExpr).getExpressions() : new Expression[]{messageExpr};
+
+		messageExpr = LiteralUtils.defendExpression(exprs[0]);
+		if (messageExpr instanceof ExpressionList) {
+			ExpressionList<?> exprList = (ExpressionList<?>) messageExpr;
+			if (exprList.getAnd()) {
+				messages = exprList.getExpressions();
+			} else {
+				messages = new Expression[]{CollectionUtils.getRandom(exprList.getExpressions())};
+			}
+		} else {
+			messages = new Expression[]{messageExpr};
+		}
+
 		worlds = (Expression<World>) exprs[1];
 		return LiteralUtils.canInitSafely(messageExpr);
 	}

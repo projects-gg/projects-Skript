@@ -50,6 +50,8 @@ class CodeConverter {
 		CODE_MAP.put('m', "strikethrough");
 		CODE_MAP.put('n', "underlined");
 		CODE_MAP.put('k', "obfuscated");
+
+		CODE_MAP.put('r', "reset");
 	}
 
 	@Nullable

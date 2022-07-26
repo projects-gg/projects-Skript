@@ -29,12 +29,12 @@ import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
-import io.skriptlang.skript.chat.util.ComponentHandler;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 
 @Name("Player List Header and Footer")
 @Description("The message above and below the player list in the tab menu.")

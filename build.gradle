@@ -77,7 +77,6 @@ tasks.withType(ShadowJar) {
 	]
 	relocate 'io.papermc.lib', 'ch.njol.skript.paperlib'
 	relocate 'org.bstats', 'ch.njol.skript.bstats'
-	relocate 'net.kyori', 'ch.njol.skript.kyori'
 	manifest {
 		attributes(
 			'Name': 'ch/njol/skript',

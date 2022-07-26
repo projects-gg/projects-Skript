@@ -18,6 +18,7 @@
  */
 package org.skriptlang.skript.bukkit.chat.util;
 
+import ch.njol.skript.ServerPlatform;
 import ch.njol.skript.Skript;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.VariableString;
@@ -46,6 +47,9 @@ import java.util.List;
 import java.util.Map;
 
 public class ComponentHandler {
+
+	private static final boolean CAN_USE_PAPER_INTEGRATION =
+		Skript.getServerPlatform() == ServerPlatform.BUKKIT_PAPER && Skript.isRunningMinecraft(1, 17);
 
 	private static final Map<String, Tag> SIMPLE_PLACEHOLDERS = new HashMap<>();
 	private static final List<TagResolver> RESOLVERS = new ArrayList<>();
@@ -158,15 +162,15 @@ public class ComponentHandler {
 		}
 
 		if (realMessage.contains("&") || realMessage.contains("§")) {
-			System.out.println("CALLED LEGACY PARSING");
-			long start = System.nanoTime();
 			StringBuilder reconstructedMessage = new StringBuilder();
 			char[] messageChars = realMessage.toCharArray();
 			int length = messageChars.length;
 			for (int i = 0; i < length; i++) {
 				char current = messageChars[i];
+				if (current == '§')
+					current = '&';
 				char next = (i + 1 != length) ? messageChars[i + 1] : ' ';
-				boolean isCode = current == '&' || current == '§';
+				boolean isCode = current == '&';
 				if (isCode && next == 'x') { // Try to parse as hex -> &x&1&2&3&4&5&6
 					reconstructedMessage.append("<#");
 					for (int i2 = i + 3; i2 < i + 14; i2 += 2) // Isolate the specific numbers
@@ -186,7 +190,6 @@ public class ComponentHandler {
 				}
 			}
 			realMessage = reconstructedMessage.toString();
-			System.out.println("FINISHED LEGACY PARSING: " + (1. * (System.nanoTime() - start) / 1000000.));
 		}
 
 		// Really annoying backwards compatibility check
@@ -346,6 +349,8 @@ public class ComponentHandler {
 	 * @return An audience consisting of the provided command senders.
 	 */
 	public static Audience audienceFrom(CommandSender... senders) {
+		if (CAN_USE_PAPER_INTEGRATION)
+			return Audience.audience(senders);
 		List<Audience> bukkitAudiences = new ArrayList<>();
 		for (CommandSender sender : senders)
 			bukkitAudiences.add(getAdventure().sender(sender));

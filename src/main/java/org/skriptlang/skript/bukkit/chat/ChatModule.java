@@ -37,7 +37,7 @@ public class ChatModule {
 	public void register(SkriptAddon addon) {
 
 		try {
-			addon.loadClasses("io.skriptlang.skript.chat.elements");
+			addon.loadClasses("org.skriptlang.skript.bukkit.chat.elements");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
