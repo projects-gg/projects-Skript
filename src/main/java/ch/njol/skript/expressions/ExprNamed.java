@@ -18,7 +18,6 @@
  */
 package ch.njol.skript.expressions;
 
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.inventory.InventoryType;
@@ -40,45 +39,42 @@ import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.util.Getter;
 import ch.njol.util.Kleenean;
 
+/**
+ * @author Peter Güttinger
+ */
 @Name("Named Item/Inventory")
-@Description({
-	"Directly names an item/inventory, useful for defining a named item/inventory in a script.",
-	"If you want to (re)name existing items/inventories you can either use this expression or "
-	+ "use <code>set <a href='#ExprName'>name of &lt;item/inventory&gt;</a> to &lt;text&gt;</code>."
-})
-@Examples({
-	"give a diamond sword of sharpness 100 named \"&lt;gold&gt;Excalibur\" to the player",
-	"set tool of player to the player's tool named \"&lt;gold&gt;Wand\"",
-	"set the name of the player's tool to \"&lt;gold&gt;Wand\"",
-	"open hopper inventory named \"Magic Hopper\" to player"
-})
+@Description("Directly names an item/inventory, useful for defining a named item/inventory in a script. " +
+		"If you want to (re)name existing items/inventories you can either use this expression or use <code>set <a href='#ExprName'>name of &lt;item/inventory&gt;</a> to &lt;text&gt;</code>.")
+@Examples({"give a diamond sword of sharpness 100 named \"&lt;gold&gt;Excalibur\" to the player",
+		"set tool of player to the player's tool named \"&lt;gold&gt;Wand\"",
+		"set the name of the player's tool to \"&lt;gold&gt;Wand\"",
+		"open hopper inventory named \"Magic Hopper\" to player"})
 @Since("2.0, 2.2-dev34 (inventories)")
 public class ExprNamed extends PropertyExpression<Object, Object> {
-
 	static {
 		Skript.registerExpression(ExprNamed.class, Object.class, ExpressionType.PROPERTY,
-				"%itemtype/inventorytype% (named|with name[s]) %component%"
-		);
+				"%itemtype/inventorytype% (named|with name[s]) %string%");
 	}
 	
-	@SuppressWarnings("NotNullFieldNotInitialized")
-	private Expression<Component> name;
-
+	@SuppressWarnings("null")
+	private Expression<String> name;
+	
+	@SuppressWarnings({"unchecked", "null"})
 	@Override
-	@SuppressWarnings("unchecked")
-	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
+	public boolean init(final Expression<?>[] exprs, final int matchedPattern, final Kleenean isDelayed, final ParseResult parseResult) {
 		setExpr(exprs[0]);
-		name = (Expression<Component>) exprs[1];
+		name = (Expression<String>) exprs[1];
 		return true;
 	}
 	
 	@Override
 	protected Object[] get(final Event e, final Object[] source) {
-		Component name = this.name.getSingle(e);
+		String name = this.name.getSingle(e);
 		if (name == null)
 			return get(source, obj -> obj); // No name provided, do nothing
 		return get(source, new Getter<Object, Object>() {
 			@Override
+			@Nullable
 			public Object get(Object obj) {
 				if (obj instanceof InventoryType)
 					return Bukkit.createInventory(null, (InventoryType) obj, name);
@@ -87,7 +83,7 @@ public class ExprNamed extends PropertyExpression<Object, Object> {
 					stack = stack.clone();
 					ItemMeta meta = stack.getItemMeta();
 					if (meta != null) {
-						meta.displayName(name);
+						meta.setDisplayName(name);
 						stack.setItemMeta(meta);
 					}
 					return new ItemType(stack);
@@ -95,7 +91,7 @@ public class ExprNamed extends PropertyExpression<Object, Object> {
 				ItemType item = (ItemType) obj;
 				item = item.clone();
 				ItemMeta meta = item.getItemMeta();
-				meta.displayName(name);
+				meta.setDisplayName(name);
 				item.setItemMeta(meta);
 				return item;
 			}
@@ -103,13 +99,13 @@ public class ExprNamed extends PropertyExpression<Object, Object> {
 	}
 	
 	@Override
-	public Class<?> getReturnType() {
+	public Class<? extends Object> getReturnType() {
 		return getExpr().getReturnType() == InventoryType.class ? Inventory.class : ItemType.class;
 	}
 	
 	@Override
-	public String toString(@Nullable Event e, boolean debug) {
-		return getExpr().toString(e, debug) + " named " + name.toString(e, debug);
+	public String toString(final @Nullable Event e, final boolean debug) {
+		return getExpr().toString(e, debug) + " named " + name;
 	}
 	
 }

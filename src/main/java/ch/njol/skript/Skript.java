@@ -1742,7 +1742,7 @@ public final class Skript extends JavaPlugin implements Listener {
 //	}
 	
 	public static void info(final CommandSender sender, final String info) {
-		sender.sendMessage(SKRIPT_PREFIX_COMPONENT.append(ComponentHandler.parse(info)));
+		ComponentHandler.audienceFrom(sender).sendMessage(SKRIPT_PREFIX_COMPONENT.append(ComponentHandler.parse(info)));
 	}
 	
 	/**
@@ -1765,11 +1765,11 @@ public final class Skript extends JavaPlugin implements Listener {
 	 * @param info
 	 */
 	public static void message(final CommandSender sender, final String info) {
-		sender.sendMessage(ComponentHandler.parse(info));
+		ComponentHandler.audienceFrom(sender).sendMessage(ComponentHandler.parse(info));
 	}
 	
 	public static void error(final CommandSender sender, final String error) {
-		sender.sendMessage(SKRIPT_PREFIX_COMPONENT.append(ComponentHandler.parse(error).color(NamedTextColor.DARK_RED)));
+		ComponentHandler.audienceFrom(sender).sendMessage(SKRIPT_PREFIX_COMPONENT.append(ComponentHandler.parse(error).color(NamedTextColor.DARK_RED)));
 	}
 	
 	/**

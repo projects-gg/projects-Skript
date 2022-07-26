@@ -25,7 +25,8 @@ dependencies {
 	shadow group: 'io.papermc', name: 'paperlib', version: '1.0.7'
 	shadow group: 'org.bstats', name: 'bstats-bukkit', version: '3.0.0'
 	implementation group: 'io.papermc.paper', name: 'paper-api', version: '1.19-R0.1-SNAPSHOT'
-	shadow group: 'net.kyori', name: 'adventure-text-serializer-legacy', version: '4.11.0-SNAPSHOT'
+	shadow group: 'net.kyori', name: 'adventure-text-minimessage', version: '4.11.0-SNAPSHOT'
+	shadow group: 'net.kyori', name: 'adventure-platform-bukkit', version: '4.1.1-SNAPSHOT'
 	shadow group: 'net.kyori', name: 'adventure-text-serializer-plain', version: '4.11.0-SNAPSHOT'
 	implementation group: 'org.eclipse.jdt', name: 'org.eclipse.jdt.annotation', version: '2.2.600'
 	implementation group: 'com.google.code.findbugs', name: 'findbugs', version: '3.0.1'
@@ -74,15 +75,9 @@ tasks.withType(ShadowJar) {
 	configurations = [
 		project.configurations.shadow
 	]
-	dependencies {
-		include(dependency('io.papermc:paperlib'))
-		include(dependency('org.bstats:bstats-bukkit'))
-		include(dependency('org.bstats:bstats-base'))
-		include(dependency('net.kyori:adventure-text-serializer-legacy'))
-		include(dependency('net.kyori:adventure-text-serializer-plain'))
-	}
 	relocate 'io.papermc.lib', 'ch.njol.skript.paperlib'
 	relocate 'org.bstats', 'ch.njol.skript.bstats'
+	relocate 'net.kyori', 'ch.njol.skript.kyori'
 	manifest {
 		attributes(
 			'Name': 'ch/njol/skript',
@@ -192,7 +187,7 @@ void createTestTask(String name, String environments, boolean devMode, int javaV
 
 def latestEnv = 'java17/paper-1.19.json'
 def latestJava = 17
-def oldestJava = 17
+def oldestJava = 8
 
 tasks.withType(JavaCompile).configureEach {
 	options.compilerArgs += ["-source", "" + oldestJava, "-target", "" + oldestJava]
@@ -201,10 +196,11 @@ tasks.withType(JavaCompile).configureEach {
 // Register different Skript testing tasks
 createTestTask('quickTest', 'src/test/skript/environments/' + latestEnv, false, latestJava, false)
 createTestTask('skriptTestJava17', 'src/test/skript/environments/java17', false, latestJava, false)
+createTestTask('skriptTestJava8', 'src/test/skript/environments/java8', false, oldestJava, false)
 createTestTask('skriptTestDev', 'src/test/skript/environments/' + (project.property('testEnv') == null
 	? latestEnv : project.property('testEnv') + '.json'), true, Integer.parseInt(project.property('testEnvJavaVersion') == null
 	? latestJava : project.property('testEnvJavaVersion')), false)
-tasks.register('skriptTest') {dependsOn skriptTestJava17}
+tasks.register('skriptTest') {dependsOn skriptTestJava8, skriptTestJava17}
 createTestTask('genDocs', 'src/test/skript/environments/' + (project.property('testEnv') == null
 	? latestEnv : project.property('testEnv') + '.json'), false, Integer.parseInt(project.property('testEnvJavaVersion') == null
 	? latestJava : project.property('testEnvJavaVersion')), true)

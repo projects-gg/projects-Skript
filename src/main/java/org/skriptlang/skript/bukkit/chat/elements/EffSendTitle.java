@@ -41,22 +41,18 @@ import java.time.Duration;
 
 @Name("Send Title")
 @Description({
-	"Sends a title/subtitle to the given player(s) with optional fadein/stay/fadeout times for Minecraft versions 1.11 and above. ",
-	"",
-	"If you're sending only the subtitle, it will be shown only if there's a title displayed at the moment, otherwise it will "
-	+ "be sent with the next title. To show only the subtitle, use: <code>send title \" \" with subtitle \"yourtexthere\" to player</code>.",
-	"",
-	"Note: if no input is given for the times, it will keep the ones from the last title sent, "
-	+ "use the <a href='effects.html#EffResetTitle'>reset title</a> effect to restore the default values."
+		"Sends a title/subtitle to the given player(s) with optional fadein/stay/fadeout times for Minecraft versions 1.11 and above.",
+		"Note: if no input is given for the title/subtitle or the times, " +
+			"it will keep the ones from the last title sent, use the <a href='effects.html#EffResetTitle'>reset title</a> effect to restore the default values."
 })
 @Examples({
-	"send title \"Competition Started\" with subtitle \"Have fun, Stay safe!\" to player for 5 seconds",
-	"send title \"Hi %player%\" to player",
-	"send title \"Loot Drop\" with subtitle \"starts in 3 minutes\" to all players",
-	"send title \"Hello %player%!\" with subtitle \"Welcome to our server\" to player for 5 seconds with fadein 1 second and fade out 1 second",
-	"send subtitle \"Party!\" to all players"
+		"send title \"Competition Started\" with subtitle \"Have fun, Stay safe!\" to player for 5 seconds",
+		"send title \"Hi %player%\" to player", "send title \"Loot Drop\" with subtitle \"starts in 3 minutes\" to all players",
+		"send title \"Hello %player%!\" with subtitle \"Welcome to our server\" to player for 5 seconds with fadein 1 second and fade out 1 second",
+		"send subtitle \"Party!\" to all players"
 })
 @Since("2.3, INSERT VERSION (sending objects)")
+// TODO see what might need taken from https://github.com/SkriptLang/Skript/pull/4362
 public class EffSendTitle extends Effect {
 
 	static {
@@ -89,17 +85,18 @@ public class EffSendTitle extends Effect {
 
 	@Override
 	protected void execute(Event e) {
-		Audience audience = Audience.audience(recipients.getArray(e));
+		Audience audience = ComponentHandler.audienceFrom(recipients.getArray(e));
 
 		Timespan fadeIn = this.fadeIn != null ? this.fadeIn.getSingle(e) : null;
 		Timespan stay = this.stay != null ? this.stay.getSingle(e) : null;
 		Timespan fadeOut = this.fadeOut != null ? this.fadeOut.getSingle(e) : null;
 
-		Duration fadeInDuration = fadeIn != null ? Ticks.duration(fadeIn.getTicks_i()) : Title.DEFAULT_TIMES.fadeIn();
-		Duration stayDuration = stay != null ? Ticks.duration(stay.getTicks_i()) : Title.DEFAULT_TIMES.stay();
-		Duration fadeOutDuration = fadeOut != null ? Ticks.duration(fadeOut.getTicks_i()) : Title.DEFAULT_TIMES.fadeOut();
+		// From Title#DEFAULT_TIMES
+		Duration fadeInDuration = fadeIn != null ? Ticks.duration(fadeIn.getTicks_i()) : Ticks.duration(10);
+		Duration stayDuration = stay != null ? Ticks.duration(stay.getTicks_i()) : Ticks.duration(70);
+		Duration fadeOutDuration = fadeOut != null ? Ticks.duration(fadeOut.getTicks_i()) : Ticks.duration(20);
 
-		Times times = Times.times(fadeInDuration, stayDuration, fadeOutDuration);
+		Times times = Times.of(fadeInDuration, stayDuration, fadeOutDuration);
 		Title title = Title.title(ComponentHandler.parseFromSingleExpression(e, this.title), ComponentHandler.parseFromSingleExpression(e, this.subtitle), times);
 
 		audience.showTitle(title);
@@ -122,14 +119,12 @@ public class EffSendTitle extends Effect {
 		if (stay != null) {
 			builder.append(" for ").append(stay.toString(e, debug));
 		} else {
-			long ticks = Title.DEFAULT_TIMES.stay().toMillis() / Ticks.SINGLE_TICK_DURATION_MS;
-			builder.append(" for ").append(ticks).append(" ticks");
+			builder.append(" for 70 ticks");
 		}
 		if (fadeIn != null) {
 			builder.append(" with fade in ").append(fadeIn.toString(e, debug));
 		} else {
-			long ticks = Title.DEFAULT_TIMES.fadeIn().toMillis() / Ticks.SINGLE_TICK_DURATION_MS;
-			builder.append(" with fade in ").append(ticks).append(" ticks");
+			builder.append(" with fade in 10 ticks");
 		}
 		if (fadeOut != null) {
 			builder.append(" with fade out ").append(fadeOut.toString(e, debug));
@@ -139,8 +134,7 @@ public class EffSendTitle extends Effect {
 			} else {
 				builder.append(" with");
 			}
-			long ticks = Title.DEFAULT_TIMES.fadeOut().toMillis() / Ticks.SINGLE_TICK_DURATION_MS;
-			builder.append(" fade out ").append(ticks).append(" ticks");
+			builder.append(" fade out 20 ticks");
 		}
 
 		return builder.toString();

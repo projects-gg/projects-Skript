@@ -18,21 +18,12 @@
  */
 package ch.njol.skript.expressions;
 
-import ch.njol.skript.Skript;
-import ch.njol.skript.aliases.Aliases;
-import ch.njol.skript.aliases.ItemType;
-import ch.njol.skript.classes.Changer.ChangeMode;
-import ch.njol.skript.doc.Description;
-import ch.njol.skript.doc.Examples;
-import ch.njol.skript.doc.Name;
-import ch.njol.skript.doc.Since;
-import ch.njol.skript.expressions.base.SimplePropertyExpression;
-import ch.njol.skript.lang.Expression;
-import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.util.slot.Slot;
-import ch.njol.util.Kleenean;
-import ch.njol.util.coll.CollectionUtils;
-import net.kyori.adventure.text.Component;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.Nameable;
@@ -50,8 +41,21 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.eclipse.jdt.annotation.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
+import ch.njol.skript.Skript;
+import ch.njol.skript.aliases.Aliases;
+import ch.njol.skript.aliases.ItemType;
+import ch.njol.skript.classes.Changer.ChangeMode;
+import ch.njol.skript.doc.Description;
+import ch.njol.skript.doc.Examples;
+import ch.njol.skript.doc.Name;
+import ch.njol.skript.doc.Since;
+import ch.njol.skript.expressions.base.SimplePropertyExpression;
+import ch.njol.skript.lang.Expression;
+import ch.njol.skript.lang.SkriptParser.ParseResult;
+import ch.njol.skript.util.slot.Slot;
+import ch.njol.util.Kleenean;
+import ch.njol.util.coll.CollectionUtils;
+import net.md_5.bungee.api.ChatColor;
 
 @Name("Name / Display Name / Tab List Name")
 @Description({"Represents the Minecraft account, display or tab list name of a player, or the custom name of an item, entity, block, inventory, or gamerule.",
@@ -95,14 +99,24 @@ import java.util.List;
 		"	set the player's tab list name to \"&lt;green&gt;%player's name%\"",
 		"set the name of the player's tool to \"Legendary Sword of Awesomeness\""})
 @Since("before 2.1, 2.2-dev20 (inventory name), 2.4 (non-living entity support, changeable inventory name)")
-public class ExprName extends SimplePropertyExpression<Object, Component> {
+public class ExprName extends SimplePropertyExpression<Object, String> {
+
+	@Nullable
+	static final MethodHandle TITLE_METHOD;
+	static final boolean HAS_GAMERULES;
 
 	static {
-		register(ExprName.class, Component.class,
-			"(1:name[s]|2:(display|nick|chat|custom)[ ]name[s])",
-			"offlineplayers/entities/blocks/itemtypes/inventories/slots/gamerules"
-		);
-		register(ExprName.class, Component.class, "(3:(player|tab)[ ]list name[s])", "players");
+		HAS_GAMERULES = Skript.classExists("org.bukkit.GameRule");
+		register(ExprName.class, String.class, "(1¦name[s]|2¦(display|nick|chat|custom)[ ]name[s])", "offlineplayers/entities/blocks/itemtypes/inventories/slots"
+                + (HAS_GAMERULES ? "/gamerules" : ""));
+		register(ExprName.class, String.class, "(3¦(player|tab)[ ]list name[s])", "players");
+
+		// Get the old method for getting the name of an inventory.
+		MethodHandle _METHOD = null;
+		try {
+			_METHOD = MethodHandles.lookup().findVirtual(Inventory.class, "getTitle", MethodType.methodType(String.class));
+		} catch (IllegalAccessException | NoSuchMethodException ignored) {}
+		TITLE_METHOD = _METHOD;
 	}
 
 	/*
@@ -123,45 +137,51 @@ public class ExprName extends SimplePropertyExpression<Object, Component> {
 
 	@Override
 	@Nullable
-	public Component convert(Object o) {
+	public String convert(Object o) {
 		if (o instanceof OfflinePlayer && ((OfflinePlayer) o).isOnline())
 			o = ((OfflinePlayer) o).getPlayer();
 
 		if (o instanceof Player) {
 			switch (mark) {
 				case 1:
-					return ((Player) o).name();
+					return ((Player) o).getName();
 				case 2:
-					return ((Player) o).displayName();
+					return ((Player) o).getDisplayName();
 				case 3:
-					return ((Player) o).playerListName();
+					return ((Player) o).getPlayerListName();
 			}
 		} else if (o instanceof OfflinePlayer) {
-			if (mark != 1)
-				return null;
-			String name = ((OfflinePlayer) o).getName();
-			return name != null ? Component.text(name) : null;
+			return mark == 1 ? ((OfflinePlayer) o).getName() : null;
 		} else if (o instanceof Entity) {
-			return ((Entity) o).customName();
+			return ((Entity) o).getCustomName();
 		} else if (o instanceof Block) {
 			BlockState state = ((Block) o).getState();
 			if (state instanceof Nameable)
-				return ((Nameable) state).customName();
+				return ((Nameable) state).getCustomName();
 		} else if (o instanceof ItemType) {
 			ItemMeta m = ((ItemType) o).getItemMeta();
-			return m.hasDisplayName() ? m.displayName() : null;
+			return m.hasDisplayName() ? m.getDisplayName() : null;
 		} else if (o instanceof Inventory) {
-			if (!((Inventory) o).getViewers().isEmpty())
-				return ((Inventory) o).getViewers().get(0).getOpenInventory().title();
-			return null;
+			if (TITLE_METHOD != null) {
+				try {
+					return (String) TITLE_METHOD.invoke(o);
+				} catch (Throwable e) {
+					Skript.exception(e);
+					return null;
+				}
+			} else {
+				if (!((Inventory) o).getViewers().isEmpty())
+					return ((Inventory) o).getViewers().get(0).getOpenInventory().getTitle();
+				return null;
+			}
 		} else if (o instanceof Slot) {
 			ItemStack is = ((Slot) o).getItem();
 			if (is != null && is.hasItemMeta()) {
 				ItemMeta m = is.getItemMeta();
-				return m.hasDisplayName() ? m.displayName() : null;
+				return m.hasDisplayName() ? m.getDisplayName() : null;
 			}
-		} else if (o instanceof GameRule) {
-            return Component.text(((GameRule) o).getName());
+		} else if (HAS_GAMERULES && o instanceof GameRule) {
+            return ((GameRule) o).getName();
         }
 		return null;
 	}
@@ -174,26 +194,26 @@ public class ExprName extends SimplePropertyExpression<Object, Component> {
 				Skript.error("Can't change the Minecraft name of a player. Change the 'display name' or 'tab list name' instead.");
 				return null;
 			}
-			return CollectionUtils.array(Component.class);
+			return CollectionUtils.array(String.class);
 		}
 		return null;	
 	}
 
 	@Override
 	public void change(Event e, @Nullable Object[] delta, ChangeMode mode) {
-		Component name = delta != null ? (Component) delta[0] : null;
+		String name = delta != null ? (String) delta[0] : null;
 		for (Object o : getExpr().getArray(e)) {
 			if (o instanceof Player) {
 				switch (mark) {
 					case 2: 
-						((Player) o).displayName(name);
+						((Player) o).setDisplayName(name != null ? name + ChatColor.RESET : ((Player) o).getName());
 						break;
-					case 3:
-						((Player) o).playerListName(name);
+					case 3: // Null check not necessary. This method will use the player's name if 'name' is null.
+						((Player) o).setPlayerListName(name);
 						break;
 				}
 			} else if (o instanceof Entity) {
-				((Entity) o).customName(name);
+				((Entity) o).setCustomName(name);
 				if (mark == 2 || mode == ChangeMode.RESET) // Using "display name"
 					((Entity) o).setCustomNameVisible(name != null);
 				if (o instanceof LivingEntity)
@@ -201,13 +221,13 @@ public class ExprName extends SimplePropertyExpression<Object, Component> {
 			} else if (o instanceof Block) {
 				BlockState state = ((Block) o).getState();
 				if (state instanceof Nameable) {
-					((Nameable) state).customName(name);
+					((Nameable) state).setCustomName(name);
 					state.update();
 				}
 			} else if (o instanceof ItemType) {
 				ItemType i = (ItemType) o;
 				ItemMeta m = i.getItemMeta();
-				m.displayName(name);
+				m.setDisplayName(name);
 				i.setItemMeta(m);
 			} else if (o instanceof Inventory) {
 				Inventory inv = (Inventory) o;
@@ -221,7 +241,7 @@ public class ExprName extends SimplePropertyExpression<Object, Component> {
 				if (!type.isCreatable())
 					return;
 				if (name == null)
-					name = type.defaultTitle();
+					name = type.getDefaultTitle();
 
 				Inventory copy;
 				if (type == InventoryType.CHEST) {
@@ -236,7 +256,7 @@ public class ExprName extends SimplePropertyExpression<Object, Component> {
 				ItemStack is = s.getItem();
 				if (is != null && !AIR.isOfType(is)) {
 					ItemMeta m = is.hasItemMeta() ? is.getItemMeta() : Bukkit.getItemFactory().getItemMeta(is.getType());
-					m.displayName(name);
+					m.setDisplayName(name);
 					is.setItemMeta(m);
 					s.setItem(is);
 				}
@@ -245,19 +265,17 @@ public class ExprName extends SimplePropertyExpression<Object, Component> {
 	}
 
 	@Override
-	public Class<Component> getReturnType() {
-		return Component.class;
+	public Class<String> getReturnType() {
+		return String.class;
 	}
 
 	@Override
 	protected String getPropertyName() {
 		switch (mark) {
-			case 2:
-				return "display name";
-			case 3:
-				return "tablist name";
-			default:
-				return "name";
+			case 1: return "name";
+			case 2: return "display name";
+			case 3: return "tablist name";
+			default: return "name";
 		}
 	}
 

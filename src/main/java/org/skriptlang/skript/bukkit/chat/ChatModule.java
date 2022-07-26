@@ -20,11 +20,9 @@ package org.skriptlang.skript.bukkit.chat;
 
 import ch.njol.skript.SkriptAddon;
 import ch.njol.skript.classes.ClassInfo;
-import ch.njol.skript.classes.Comparator;
 import ch.njol.skript.classes.Parser;
 import ch.njol.skript.lang.ParseContext;
 import ch.njol.skript.registrations.Classes;
-import ch.njol.skript.registrations.Comparators;
 import ch.njol.skript.registrations.Converters;
 import org.skriptlang.skript.bukkit.chat.util.ComponentHandler;
 import net.kyori.adventure.text.Component;
@@ -39,24 +37,13 @@ public class ChatModule {
 	public void register(SkriptAddon addon) {
 
 		try {
-			addon.loadClasses("org.skriptlang.skript.bukkit.chat.elements");
+			addon.loadClasses("io.skriptlang.skript.chat.elements");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 		Converters.registerConverter(String.class, Component.class, ComponentHandler::parse);
 		Converters.registerConverter(Component.class, String.class, ComponentHandler::toLegacyString);
-		Comparators.registerComparator(String.class, Component.class, new Comparator<String, Component>() {
-			@Override
-			public Relation compare(String o1, Component o2) {
-				return Relation.get(o1.equals(ComponentHandler.toLegacyString(o2)));
-			}
-
-			@Override
-			public boolean supportsOrdering() {
-				return false;
-			}
-		});
 
 		Classes.registerClass(new ClassInfo<>(Component.class, "component")
 			.user("components?")
@@ -79,6 +66,9 @@ public class ChatModule {
 				}
 			})
 		);
+
+		// Just to initialize it now
+		ComponentHandler.getAdventure();
 
 		ComponentHandler.registerPlaceholder("dark_cyan", "<dark_aqua>");
 		ComponentHandler.registerPlaceholder("dark_turquoise", "<dark_aqua>");

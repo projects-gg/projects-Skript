@@ -29,6 +29,7 @@ import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
+import io.skriptlang.skript.chat.util.ComponentHandler;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
@@ -43,26 +44,24 @@ import org.eclipse.jdt.annotation.Nullable;
 		"reset all players' tab list header"
 })
 @Since("2.4")
-public class ExprPlayerListHeaderFooter extends SimplePropertyExpression<Player, Component> {
+public class ExprPlayerListHeaderFooter extends SimplePropertyExpression<Player, String> {
 
 	static {
-		PropertyExpression.register(ExprPlayerListHeaderFooter.class, Component.class,
-			"(player|tab)[ ]list (header|:footer) [(text|message)]", "players"
-		);
+		PropertyExpression.register(ExprPlayerListHeaderFooter.class, String.class, "(player|tab)[ ]list (header|1¦footer) [(text|message)]", "players");
 	}
 
-	private boolean footer;
+	private boolean isHeader;
 
 	@Override
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-		footer = parseResult.hasTag("footer");
+		isHeader = parseResult.mark == 0;
 		return super.init(exprs, matchedPattern, isDelayed, parseResult);
 	}
 
 	@Override
 	@Nullable
-	public Component convert(Player player) {
-		return footer ? player.playerListFooter() : player.playerListHeader();
+	public String convert(Player player) {
+		return isHeader ? player.getPlayerListHeader() : player.getPlayerListFooter();
 	}
 
 	@Override
@@ -72,7 +71,7 @@ public class ExprPlayerListHeaderFooter extends SimplePropertyExpression<Player,
 			case SET:
 			case DELETE:
 			case RESET:
-				return CollectionUtils.array(Component[].class);
+				return CollectionUtils.array(String[].class, Component.class);
 			default:
 				return null;
 		}
@@ -80,26 +79,30 @@ public class ExprPlayerListHeaderFooter extends SimplePropertyExpression<Player,
 
 	@Override
 	public void change(Event e, @Nullable Object[] delta, ChangeMode mode) {
-		Component component = Component.empty();
-		for (Object userComponent : delta)
-			component = component.append((Component) userComponent).append(Component.newline());
-
-		Audience audience = Audience.audience(getExpr().getArray(e));
-		if (footer) {
-			audience.sendPlayerListFooter(component);
+		Component component;
+		if (delta == null) {
+			component = Component.empty();
+		} else if (delta[0] instanceof Component) {
+			component = (Component) delta[0];
 		} else {
+			component = ComponentHandler.parse(String.join("\n", (String[]) delta), false);
+		}
+		Audience audience = ComponentHandler.audienceFrom(getExpr().getArray(e));
+		if (isHeader) {
 			audience.sendPlayerListHeader(component);
+		} else {
+			audience.sendPlayerListFooter(component);
 		}
 	}
 
 	@Override
-	public Class<? extends Component> getReturnType() {
-		return Component.class;
+	public Class<? extends String> getReturnType() {
+		return String.class;
 	}
 
 	@Override
 	protected String getPropertyName() {
-		return "player list " + (footer ? "header" : "footer");
+		return "player list " + (isHeader ? "header" : "footer");
 	}
 
 }
