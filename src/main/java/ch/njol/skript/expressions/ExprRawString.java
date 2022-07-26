@@ -23,7 +23,6 @@ import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.doc.Since;
-import ch.njol.skript.expressions.base.PropertyExpression;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.ExpressionList;
 import ch.njol.skript.lang.ExpressionType;
@@ -32,6 +31,7 @@ import ch.njol.skript.lang.VariableString;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.Kleenean;
+import ch.njol.util.coll.CollectionUtils;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -40,8 +40,10 @@ import java.util.Arrays;
 import java.util.List;
 
 @Name("Raw String")
-@Description("Returns the string without formatting (colors etc.) and without stripping them from it, " +
-	"e.g. <code>raw \"&aHello There!\"</code> would output <code>&aHello There!</code>")
+@Description(
+	"Returns the string without formatting (colors etc.) and without stripping them from it, "
+	+ "e.g. <code>raw \"&aHello There!\"</code> would output <code>&aHello There!</code>"
+)
 @Examples("send raw \"&aThis text is unformatted!\" to all players")
 @Since("INSERT VERSION")
 public class ExprRawString extends SimpleExpression<String> {
@@ -51,21 +53,24 @@ public class ExprRawString extends SimpleExpression<String> {
 	}
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
-	private Expression<String> expr;
+	private Expression<String> messageExpr;
 	@SuppressWarnings("NotNullFieldNotInitialized")
 	private Expression<? extends String>[] messages;
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-		expr = (Expression<String>) exprs[0];
-		messages = expr instanceof ExpressionList<?> ?
-			((ExpressionList<String>) expr).getExpressions() : new Expression[]{expr};
-		for (Expression<? extends String> message : messages) {
-			if (message instanceof ExprColoured) {
-				Skript.error("The 'colored' expression may not be used in a 'raw string' expression");
-				return false;
+		messageExpr = (Expression<String>) exprs[0];
+		messageExpr = LiteralUtils.defendExpression(exprs[0]);
+		if (messageExpr instanceof ExpressionList) {
+			ExpressionList<String> exprList = (ExpressionList<String>) messageExpr;
+			if (exprList.getAnd()) {
+				messages = exprList.getExpressions();
+			} else {
+				messages = new Expression[]{CollectionUtils.getRandom(exprList.getExpressions())};
 			}
+		} else {
+			messages = new Expression[]{messageExpr};
 		}
 		return true;
 	}
@@ -75,7 +80,7 @@ public class ExprRawString extends SimpleExpression<String> {
 		List<String> strings = new ArrayList<>();
 		for (Expression<? extends String> message : messages) {
 			if (message instanceof VariableString) {
-				strings.add(((VariableString) message).toUnformattedString(e));
+				strings.add(((VariableString) message).toString(false, e));
 				continue;
 			}
 			strings.addAll(Arrays.asList(message.getArray(e)));
@@ -85,7 +90,7 @@ public class ExprRawString extends SimpleExpression<String> {
 
 	@Override
 	public boolean isSingle() {
-		return expr.isSingle();
+		return messageExpr.isSingle();
 	}
 
 	@Override
@@ -95,6 +100,7 @@ public class ExprRawString extends SimpleExpression<String> {
 
 	@Override
 	public String toString(@Nullable Event e, boolean debug) {
-		return "raw " + expr.toString(e, debug);
+		return "raw " + messageExpr.toString(e, debug);
 	}
+
 }

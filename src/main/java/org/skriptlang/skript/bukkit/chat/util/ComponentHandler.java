@@ -332,6 +332,8 @@ public class ComponentHandler {
 	 */
 	@SuppressWarnings("ConstantConditions")
 	public static Audience audienceFrom(Collection<CommandSender> senders) {
+		if (CAN_USE_PAPER_INTEGRATION)
+			return Audience.audience(senders);
 		List<Audience> bukkitAudiences = new ArrayList<>();
 		for (CommandSender sender : senders) {
 			if (sender instanceof Audience) { // On paper, a CommandSender is an Audience
