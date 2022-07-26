@@ -48,7 +48,7 @@ public class ExprPermissions extends SimpleExpression<String> {
 	}
 
 	// Metadata tag
-	private final String PERMISSION_TAG = "skript-permissions";
+	private static final String PERMISSION_TAG = "skript-permissions";
 
 	private Expression<Entity> entities;
 
