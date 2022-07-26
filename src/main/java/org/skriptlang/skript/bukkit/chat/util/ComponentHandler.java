@@ -18,7 +18,6 @@
  */
 package org.skriptlang.skript.bukkit.chat.util;
 
-import ch.njol.skript.ServerPlatform;
 import ch.njol.skript.Skript;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.VariableString;
@@ -48,8 +47,10 @@ import java.util.Map;
 
 public class ComponentHandler {
 
-	private static final boolean CAN_USE_PAPER_INTEGRATION =
-		Skript.getServerPlatform() == ServerPlatform.BUKKIT_PAPER && Skript.isRunningMinecraft(1, 17);
+	@SuppressWarnings("ConstantConditions") // only true for newer Paper versions
+	// TODO make sure this sends components using proper methods
+	// IIRC it doesn't right now - due to shading
+	private static final boolean COMMAND_SENDER_IS_AUDIENCE = Audience.class.isAssignableFrom(CommandSender.class);
 
 	private static final Map<String, Tag> SIMPLE_PLACEHOLDERS = new HashMap<>();
 	private static final List<TagResolver> RESOLVERS = new ArrayList<>();
@@ -192,6 +193,7 @@ public class ComponentHandler {
 			realMessage = reconstructedMessage.toString();
 		}
 
+		// TODO find a better solution
 		// Really annoying backwards compatibility check
 		realMessage = realMessage.replace("<dark cyan>", "<dark_aqua>")
 			.replace("<dark turquoise>", "<dark_aqua>")
@@ -330,18 +332,12 @@ public class ComponentHandler {
 	 * @param senders The members of this audience.
 	 * @return An audience consisting of the provided command senders.
 	 */
-	@SuppressWarnings("ConstantConditions")
 	public static Audience audienceFrom(Collection<CommandSender> senders) {
-		if (CAN_USE_PAPER_INTEGRATION)
+		if (COMMAND_SENDER_IS_AUDIENCE)
 			return Audience.audience(senders);
 		List<Audience> bukkitAudiences = new ArrayList<>();
-		for (CommandSender sender : senders) {
-			if (sender instanceof Audience) { // On paper, a CommandSender is an Audience
-				bukkitAudiences.add(sender);
-			} else {
-				bukkitAudiences.add(getAdventure().sender(sender));
-			}
-		}
+		for (CommandSender sender : senders)
+			bukkitAudiences.add(getAdventure().sender(sender));
 		return Audience.audience(bukkitAudiences);
 	}
 
@@ -351,7 +347,7 @@ public class ComponentHandler {
 	 * @return An audience consisting of the provided command senders.
 	 */
 	public static Audience audienceFrom(CommandSender... senders) {
-		if (CAN_USE_PAPER_INTEGRATION)
+		if (COMMAND_SENDER_IS_AUDIENCE)
 			return Audience.audience(senders);
 		List<Audience> bukkitAudiences = new ArrayList<>();
 		for (CommandSender sender : senders)

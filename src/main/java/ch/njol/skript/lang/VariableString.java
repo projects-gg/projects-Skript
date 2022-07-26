@@ -370,7 +370,7 @@ public class VariableString implements Expression<String> {
 				boolean escape = !(o instanceof ExprColoured) && format;
 				String expression = Classes.toString(((Expression<?>) o).getArray(e), true, mode);
 				if (escape)
-					ComponentHandler.escape(expression);
+					expression = ComponentHandler.escape(expression);
 				b.append(expression);
 			} else {
 				b.append(o);

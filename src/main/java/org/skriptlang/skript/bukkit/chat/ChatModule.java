@@ -70,6 +70,7 @@ public class ChatModule {
 		// Just to initialize it now
 		ComponentHandler.getAdventure();
 
+		// TODO maybe find a better solution idk though
 		ComponentHandler.registerPlaceholder("dark_cyan", "<dark_aqua>");
 		ComponentHandler.registerPlaceholder("dark_turquoise", "<dark_aqua>");
 		ComponentHandler.registerPlaceholder("cyan", "<dark_aqua>");

@@ -1946,3 +1946,7 @@ types:
 	# Hooks
 	money: money
 	region: region¦s
+
+	# Other API
+
+	component: component¦s @a
