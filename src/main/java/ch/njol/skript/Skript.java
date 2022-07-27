@@ -72,6 +72,8 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.eclipse.jdt.annotation.Nullable;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
 
 import com.google.gson.Gson;
 
@@ -119,9 +121,9 @@ import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.registrations.Comparators;
 import ch.njol.skript.registrations.Converters;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.skript.tests.runner.SkriptTestEvent;
-import ch.njol.skript.tests.runner.TestMode;
-import ch.njol.skript.tests.runner.TestTracker;
+import ch.njol.skript.test.runner.SkriptTestEvent;
+import ch.njol.skript.test.runner.TestMode;
+import ch.njol.skript.test.runner.TestTracker;
 import ch.njol.skript.timings.SkriptTimings;
 import ch.njol.skript.update.ReleaseManifest;
 import ch.njol.skript.update.ReleaseStatus;
@@ -555,7 +557,7 @@ public final class Skript extends JavaPlugin implements Listener {
 					info("Preparing Skript for testing...");
 					tainted = true;
 					try {
-						getAddonInstance().loadClasses("ch.njol.skript", "tests");
+						getAddonInstance().loadClasses("ch.njol.skript.test", "runner");
 					} catch (IOException e) {
 						Skript.exception("Failed to load testing environment.");
 						Bukkit.getServer().shutdown();
@@ -628,6 +630,30 @@ public final class Skript extends JavaPlugin implements Listener {
 						if (TestMode.DEV_MODE) { // Run tests NOW!
 							info("Test development mode enabled. Test scripts are at " + TestMode.TEST_DIR);
 						} else {
+							info("Running all JUnit tests...");
+							long milliseconds = 0, tests = 0, fails = 0, ignored = 0;
+							try {
+								for (Class<?> test : Utils.getClasses("ch.njol.skript.test", "tests")) {
+									Result junit = JUnitCore.runClasses(test);
+									TestTracker.testStarted("JUnit: '" + test.getName() + "'");
+									tests += junit.getRunCount();
+									milliseconds += junit.getRunTime();
+									ignored += junit.getIgnoreCount();
+									if (junit.getFailureCount() > 0) {
+										fails += junit.getFailureCount();
+										junit.getFailures().forEach(failure -> {
+											String message = failure.getMessage() == null ? "" : " " + failure.getMessage();
+											TestTracker.testFailed("JUnit: '" + test.getName() + "'" + message);
+											Skript.exception(failure.getException(), "JUnit test '" + failure.getTestHeader() + " failed.");
+										});
+									}
+								}
+							} catch (IOException e) {
+								Skript.exception(e, "Failed to execute JUnit runtime tests.");
+							}
+							if (ignored > 0)
+								Skript.warning("There were " + ignored + " ignored test cases! This can mean they are not properly setup in order for that class!");
+							info("Completed " + tests + " JUnit tests with " + fails + " failures in " + milliseconds + " milliseconds.");
 							info("Running all tests from " + TestMode.TEST_DIR);
 
 							// Treat parse errors as fatal testing failure
@@ -660,6 +686,7 @@ public final class Skript extends JavaPlugin implements Listener {
 								Skript.exception(e, "Failed to write test results.");
 							}
 							info("Testing done, shutting down the server.");
+
 							// Delay server shutdown to stop the server from crashing because the current tick takes a long time due to all the tests
 							Bukkit.getScheduler().runTaskLater(Skript.this, () -> {
 								Bukkit.getServer().shutdown();

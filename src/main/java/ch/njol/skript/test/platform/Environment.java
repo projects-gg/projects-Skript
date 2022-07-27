@@ -16,13 +16,15 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package ch.njol.skript.tests.platform;
+package ch.njol.skript.test.platform;
 
-import ch.njol.skript.tests.TestResults;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import ch.njol.skript.test.utils.TestResults;
+
 import org.eclipse.jdt.annotation.Nullable;
 
 import java.io.File;
@@ -239,11 +241,11 @@ public class Environment {
 		args.addAll(Arrays.asList(commandLine));
 
 		Process process = new ProcessBuilder(args)
-			.directory(env.toFile())
-			.redirectOutput(Redirect.INHERIT)
-			.redirectError(Redirect.INHERIT)
-			.redirectInput(Redirect.INHERIT)
-			.start();
+				.directory(env.toFile())
+				.redirectOutput(Redirect.INHERIT)
+				.redirectError(Redirect.INHERIT)
+				.redirectInput(Redirect.INHERIT)
+				.start();
 
 		// When we exit, try to make them exit too
 		Runtime.getRuntime().addShutdownHook(new Thread(() ->  {

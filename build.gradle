@@ -19,11 +19,17 @@ allprojects {
 		maven { url 'https://repo.papermc.io/repository/maven-public/' }
 		maven { url 'https://ci.emc.gs/nexus/content/groups/aikar/' }
 	}
+	configurations.all {
+		resolutionStrategy {
+			force('org.junit.jupiter:junit-jupiter-engine:5.8.1')
+		}
+	}
 }
 
 dependencies {
 	shadow group: 'io.papermc', name: 'paperlib', version: '1.0.7'
 	shadow group: 'org.bstats', name: 'bstats-bukkit', version: '3.0.0'
+
 	implementation group: 'io.papermc.paper', name: 'paper-api', version: '1.19-R0.1-SNAPSHOT'
 	implementation group: 'org.eclipse.jdt', name: 'org.eclipse.jdt.annotation', version: '2.2.600'
 	implementation group: 'com.google.code.findbugs', name: 'findbugs', version: '3.0.1'
@@ -31,7 +37,16 @@ dependencies {
 	implementation group: 'net.milkbowl.vault', name: 'Vault', version: '1.7.1', {
 		exclude group: 'org.bstats', module: 'bstats-bukkit'
 	}
+
 	implementation fileTree(dir: 'lib', include: '*.jar')
+
+	// JUnit 4 Runner for Runtime tests.
+	shadow fileTree(dir: 'lib', include: 'junit-4.13.2.jar')
+	shadow fileTree(dir: 'lib', include: 'hamcrest-2.2.jar')
+
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.1'
+    testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.8.1'
+	testImplementation group: 'org.easymock', name: 'easymock', version: '4.2'
 }
 
 compileJava.options.encoding = 'UTF-8'
@@ -51,11 +66,21 @@ task jar(overwrite: true, type: ShadowJar) {
 	dependsOn checkAliases
 	archiveName jarName ? 'Skript.jar' : jarName
 	from sourceSets.main.output
+	dependencies {
+		exclude(dependency('org.hamcrest:.*'))
+		exclude(dependency('org.junit:.*'))
+		exclude(dependency('junit:.*'))
+	}
 }
 
 task build(overwrite: true, type: ShadowJar) {
 	archiveName jarName ? 'Skript.jar' : jarName
 	from sourceSets.main.output
+	dependencies {
+		exclude(dependency('org.hamcrest:.*'))
+		exclude(dependency('org.junit:.*'))
+		exclude(dependency('junit:.*'))
+	}
 }
 
 task relocateShadowJar(type: ConfigureShadowRelocation) {
@@ -174,7 +199,7 @@ void createTestTask(String name, String environments, boolean devMode, int javaV
 			project.configurations.runtimeClasspath.find { it.name.startsWith('gson') },
 			sourceSets.main.runtimeClasspath
 		])
-		main = 'ch.njol.skript.tests.platform.PlatformMain'
+		main = 'ch.njol.skript.test.platform.PlatformMain'
 		args = [
 			'test_runners',
 			'src/test/skript/tests',
@@ -306,4 +331,10 @@ task nightlyRelease(type: ShadowJar) {
 			'Sealed': 'true'
 		)
 	}
+}
+
+
+test {
+    useJUnitPlatform()
+    dependsOn jar
 }
