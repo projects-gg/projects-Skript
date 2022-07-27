@@ -47,11 +47,6 @@ import java.util.Map;
 
 public class ComponentHandler {
 
-	@SuppressWarnings("ConstantConditions") // only true for newer Paper versions
-	// TODO make sure this sends components using proper methods
-	// IIRC it doesn't right now - due to shading
-	private static final boolean COMMAND_SENDER_IS_AUDIENCE = Audience.class.isAssignableFrom(CommandSender.class);
-
 	private static final Map<String, Tag> SIMPLE_PLACEHOLDERS = new HashMap<>();
 	private static final List<TagResolver> RESOLVERS = new ArrayList<>();
 
@@ -333,8 +328,6 @@ public class ComponentHandler {
 	 * @return An audience consisting of the provided command senders.
 	 */
 	public static Audience audienceFrom(Collection<CommandSender> senders) {
-		if (COMMAND_SENDER_IS_AUDIENCE)
-			return Audience.audience(senders);
 		List<Audience> bukkitAudiences = new ArrayList<>();
 		for (CommandSender sender : senders)
 			bukkitAudiences.add(getAdventure().sender(sender));
@@ -347,8 +340,6 @@ public class ComponentHandler {
 	 * @return An audience consisting of the provided command senders.
 	 */
 	public static Audience audienceFrom(CommandSender... senders) {
-		if (COMMAND_SENDER_IS_AUDIENCE)
-			return Audience.audience(senders);
 		List<Audience> bukkitAudiences = new ArrayList<>();
 		for (CommandSender sender : senders)
 			bukkitAudiences.add(getAdventure().sender(sender));
