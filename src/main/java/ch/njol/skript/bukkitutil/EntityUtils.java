@@ -18,7 +18,9 @@
  */
 package ch.njol.skript.bukkitutil;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -40,6 +42,7 @@ import com.destroystokyo.paper.entity.ai.GoalKey;
 import com.destroystokyo.paper.entity.ai.GoalType;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Lists;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.entity.EntityData;
@@ -84,7 +87,7 @@ public class EntityUtils {
 
 		@Override
 		public boolean shouldActivate() {
-			return ticks < 60;
+			return ticks < 50;
 		}
 
 		@Override
@@ -144,7 +147,7 @@ public class EntityUtils {
 			if (!(entity instanceof Mob))
 				continue;
 			Mob mob = (Mob) entity;
-			Bukkit.getMobGoals().getRunningGoals(mob).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
+			Bukkit.getMobGoals().getRunningGoals(mob, GoalType.LOOK).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
 			float speed = headRotationSpeed != null ? headRotationSpeed : mob.getHeadRotationSpeed();
 			float maxPitch = maxHeadPitch != null ? maxHeadPitch : mob.getMaxHeadPitch();
 			Bukkit.getMobGoals().addGoal(mob, 0, new LookGoal(target, mob, speed, maxPitch));
@@ -181,7 +184,7 @@ public class EntityUtils {
 				}
 			} else if (entity instanceof Mob) {
 				Mob mob = (Mob) entity;
-				Bukkit.getMobGoals().getRunningGoals(mob).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
+				Bukkit.getMobGoals().getRunningGoals(mob, GoalType.LOOK).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
 				float speed = headRotationSpeed != null ? headRotationSpeed : mob.getHeadRotationSpeed();
 				float maxPitch = maxHeadPitch != null ? maxHeadPitch : mob.getMaxHeadPitch();
 				Bukkit.getMobGoals().addGoal(mob, 0, new LookGoal(target, mob, speed, maxPitch));
