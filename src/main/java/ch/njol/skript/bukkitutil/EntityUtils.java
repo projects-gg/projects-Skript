@@ -50,7 +50,6 @@ public class EntityUtils {
 			if (c != null)
 				SPAWNER_TYPES.put(EntityData.fromClass(c), e);
 		}
-		EntityUtils.lookAt(LookAnchor.EYES, SPAWNER_TYPES, null, null);
 	}
 
 	/**
