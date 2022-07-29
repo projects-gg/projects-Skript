@@ -18,16 +18,32 @@
  */
 package ch.njol.skript.bukkitutil;
 
+import java.util.EnumSet;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
+import org.bukkit.entity.Piglin;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Zoglin;
+import org.bukkit.entity.Zombie;
+import org.bukkit.util.Vector;
+import org.eclipse.jdt.annotation.Nullable;
+
+import com.destroystokyo.paper.entity.ai.Goal;
+import com.destroystokyo.paper.entity.ai.GoalKey;
+import com.destroystokyo.paper.entity.ai.GoalType;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+
 import ch.njol.skript.Skript;
 import ch.njol.skript.entity.EntityData;
 import io.papermc.paper.entity.LookAnchor;
-
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import org.bukkit.Location;
-import org.bukkit.entity.*;
-import org.bukkit.util.Vector;
-import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * Utility class for quick {@link Entity} methods
@@ -42,7 +58,7 @@ public class EntityUtils {
 	/**
 	 * Cache Skript EntityData -> Bukkit EntityType
 	 */
-	private static final BiMap<EntityData, EntityType> SPAWNER_TYPES = HashBiMap.create();
+	private static final BiMap<EntityData<?>, EntityType> SPAWNER_TYPES = HashBiMap.create();
 
 	static {
 		for (EntityType e : EntityType.values()) {
@@ -50,6 +66,50 @@ public class EntityUtils {
 			if (c != null)
 				SPAWNER_TYPES.put(EntityData.fromClass(c), e);
 		}
+	}
+
+	private static class LookGoal implements Goal<Mob> {
+
+		private final float speed, maxPitch;
+		private final Object target;
+		private final Mob mob;
+		private int ticks = 0;
+
+		LookGoal(Object target, Mob mob, float speed, float maxPitch) {
+			this.maxPitch = maxPitch;
+			this.target = target;
+			this.speed = speed;
+			this.mob = mob;
+		}
+
+		@Override
+		public boolean shouldActivate() {
+			return ticks < 60;
+		}
+
+		@Override
+		public void tick() {
+			if (target instanceof Vector) {
+				Vector vector = ((Vector)target);
+				mob.lookAt(vector.getX(), vector.getY(), vector.getZ(), speed, maxPitch);
+			} else if (target instanceof Location) {
+				mob.lookAt((Location) target, speed, maxPitch);
+			} else if (target instanceof Entity) {
+				mob.lookAt((Entity) target, speed, maxPitch);
+			}
+			ticks++;
+		}
+
+		@Override
+		public GoalKey<Mob> getKey() {
+			return GoalKey.of(Mob.class, new NamespacedKey(Skript.getInstance(), "skript_entity_look"));
+		}
+
+		@Override
+		public EnumSet<GoalType> getTypes() {
+			return EnumSet.of(GoalType.LOOK);
+		}
+
 	}
 
 	/**
@@ -84,16 +144,10 @@ public class EntityUtils {
 			if (!(entity instanceof Mob))
 				continue;
 			Mob mob = (Mob) entity;
+			Bukkit.getMobGoals().getRunningGoals(mob).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
 			float speed = headRotationSpeed != null ? headRotationSpeed : mob.getHeadRotationSpeed();
 			float maxPitch = maxHeadPitch != null ? maxHeadPitch : mob.getMaxHeadPitch();
-			if (target instanceof Vector) {
-				Vector vector = ((Vector)target);
-				mob.lookAt(vector.getX(), vector.getY(), vector.getZ(), speed, maxPitch);
-			} else if (target instanceof Location) {
-				mob.lookAt((Location) target, speed, maxPitch);
-			} else if (target instanceof Entity) {
-				mob.lookAt((Entity) target, speed, maxPitch);
-			}
+			Bukkit.getMobGoals().addGoal(mob, 0, new LookGoal(target, mob, speed, maxPitch));
 		}
 	}
 
@@ -127,16 +181,10 @@ public class EntityUtils {
 				}
 			} else if (entity instanceof Mob) {
 				Mob mob = (Mob) entity;
+				Bukkit.getMobGoals().getRunningGoals(mob).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
 				float speed = headRotationSpeed != null ? headRotationSpeed : mob.getHeadRotationSpeed();
 				float maxPitch = maxHeadPitch != null ? maxHeadPitch : mob.getMaxHeadPitch();
-				if (target instanceof Vector) {
-					Vector vector = ((Vector)target);
-					mob.lookAt(vector.getX(), vector.getY(), vector.getZ(), speed, maxPitch);
-				} else if (target instanceof Location) {
-					mob.lookAt((Location) target, speed, maxPitch);
-				} else if (target instanceof Entity) {
-					mob.lookAt((Entity) target, speed, maxPitch);
-				}
+				Bukkit.getMobGoals().addGoal(mob, 0, new LookGoal(target, mob, speed, maxPitch));
 			}
 		}
 	}
@@ -229,7 +277,7 @@ public class EntityUtils {
 	 * @param e Skript's EntityData
 	 * @return Bukkit's EntityType
 	 */
-	public static EntityType toBukkitEntityType(EntityData e) {
+	public static EntityType toBukkitEntityType(EntityData<?> e) {
 		return SPAWNER_TYPES.get(EntityData.fromClass(e.getType())); // Fix Comparison Issues
 	}
 
