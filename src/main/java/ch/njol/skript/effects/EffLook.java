@@ -18,12 +18,14 @@
  */
 package ch.njol.skript.effects;
 
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.Skript;
-import ch.njol.skript.bukkitutil.EntityUtils;
+import ch.njol.skript.bukkitutil.PaperEntityUtils;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
@@ -52,9 +54,11 @@ import io.papermc.paper.entity.LookAnchor;
 @RequiredPlugins("Paper 1.17+, Paper 1.19.1+ (Players & Look Anchors)")
 public class EffLook extends Effect {
 
+	private static final boolean LOOK_ANCHORS = Skript.classExists("io.papermc.paper.entity.LookAnchor");
+
 	static {
-		if (EntityUtils.LOOK_AT) {
-			if (EntityUtils.LOOK_ANCHORS) {
+		if (Skript.methodExists(Mob.class, "lookAt", Entity.class)) {
+			if (LOOK_ANCHORS) {
 				Skript.registerEffect(EffLook.class, "(force|make) %livingentities% [to] (face [towards]|look [(at|towards)]) " +
 					"(%entity%['s (feet:feet|eyes)]|of:(feet:feet|eyes) of %entity%) " +
 					"[at [head] [rotation] speed %-number%] [[and] max[imum] [head] pitch %-number%]",
@@ -83,7 +87,7 @@ public class EffLook extends Effect {
 	@Override
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
 		entities = (Expression<LivingEntity>) exprs[0];
-		if (EntityUtils.LOOK_ANCHORS && matchedPattern == 0) {
+		if (LOOK_ANCHORS && matchedPattern == 0) {
 			target = exprs[parseResult.hasTag("of") ? 2 : 1];
 			speed = (Expression<Number>) exprs[3];
 			maxPitch = (Expression<Number>) exprs[4];
@@ -104,11 +108,11 @@ public class EffLook extends Effect {
 			return;
 		Float speed = this.speed == null ? null : this.speed.getSingle(event).floatValue();
 		Float maxPitch = this.maxPitch == null ? null : this.maxPitch.getSingle(event).floatValue();
-		if (EntityUtils.LOOK_ANCHORS) {
-			EntityUtils.lookAt(anchor, object, speed, maxPitch, entities.getArray(event));
+		if (LOOK_ANCHORS) {
+			PaperEntityUtils.lookAt(anchor, object, speed, maxPitch, entities.getArray(event));
 			return;
 		}
-		EntityUtils.lookAt(object, speed, maxPitch, entities.getArray(event));
+		PaperEntityUtils.lookAt(object, speed, maxPitch, entities.getArray(event));
 	}
 
 	@Override
