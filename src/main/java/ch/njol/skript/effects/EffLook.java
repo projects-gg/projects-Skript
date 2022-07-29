@@ -18,9 +18,7 @@
  */
 package ch.njol.skript.effects;
 
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Mob;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 

@@ -18,13 +18,8 @@
  */
 package ch.njol.skript.bukkitutil;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -37,12 +32,9 @@ import org.bukkit.entity.Zombie;
 import org.bukkit.util.Vector;
 import org.eclipse.jdt.annotation.Nullable;
 
-import com.destroystokyo.paper.entity.ai.Goal;
-import com.destroystokyo.paper.entity.ai.GoalKey;
 import com.destroystokyo.paper.entity.ai.GoalType;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.Lists;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.entity.EntityData;
@@ -69,50 +61,6 @@ public class EntityUtils {
 			if (c != null)
 				SPAWNER_TYPES.put(EntityData.fromClass(c), e);
 		}
-	}
-
-	private static class LookGoal implements Goal<Mob> {
-
-		private final float speed, maxPitch;
-		private final Object target;
-		private final Mob mob;
-		private int ticks = 0;
-
-		LookGoal(Object target, Mob mob, float speed, float maxPitch) {
-			this.maxPitch = maxPitch;
-			this.target = target;
-			this.speed = speed;
-			this.mob = mob;
-		}
-
-		@Override
-		public boolean shouldActivate() {
-			return ticks < 50;
-		}
-
-		@Override
-		public void tick() {
-			if (target instanceof Vector) {
-				Vector vector = ((Vector)target);
-				mob.lookAt(vector.getX(), vector.getY(), vector.getZ(), speed, maxPitch);
-			} else if (target instanceof Location) {
-				mob.lookAt((Location) target, speed, maxPitch);
-			} else if (target instanceof Entity) {
-				mob.lookAt((Entity) target, speed, maxPitch);
-			}
-			ticks++;
-		}
-
-		@Override
-		public GoalKey<Mob> getKey() {
-			return GoalKey.of(Mob.class, new NamespacedKey(Skript.getInstance(), "skript_entity_look"));
-		}
-
-		@Override
-		public EnumSet<GoalType> getTypes() {
-			return EnumSet.of(GoalType.LOOK);
-		}
-
 	}
 
 	/**
