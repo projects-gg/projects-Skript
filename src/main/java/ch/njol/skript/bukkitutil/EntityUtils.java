@@ -32,7 +32,6 @@ import org.bukkit.entity.Zombie;
 import org.bukkit.util.Vector;
 import org.eclipse.jdt.annotation.Nullable;
 
-import com.destroystokyo.paper.entity.ai.GoalType;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
@@ -95,7 +94,7 @@ public class EntityUtils {
 			if (!(entity instanceof Mob))
 				continue;
 			Mob mob = (Mob) entity;
-			Bukkit.getMobGoals().getRunningGoals(mob, GoalType.LOOK).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
+			Bukkit.getMobGoals().getRunningGoals(mob, com.destroystokyo.paper.entity.ai.GoalType.LOOK).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
 			float speed = headRotationSpeed != null ? headRotationSpeed : mob.getHeadRotationSpeed();
 			float maxPitch = maxHeadPitch != null ? maxHeadPitch : mob.getMaxHeadPitch();
 			Bukkit.getMobGoals().addGoal(mob, 0, new LookGoal(target, mob, speed, maxPitch));
@@ -132,7 +131,7 @@ public class EntityUtils {
 				}
 			} else if (entity instanceof Mob) {
 				Mob mob = (Mob) entity;
-				Bukkit.getMobGoals().getRunningGoals(mob, GoalType.LOOK).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
+				Bukkit.getMobGoals().getRunningGoals(mob, com.destroystokyo.paper.entity.ai.GoalType.LOOK).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
 				float speed = headRotationSpeed != null ? headRotationSpeed : mob.getHeadRotationSpeed();
 				float maxPitch = maxHeadPitch != null ? maxHeadPitch : mob.getMaxHeadPitch();
 				Bukkit.getMobGoals().addGoal(mob, 0, new LookGoal(target, mob, speed, maxPitch));
