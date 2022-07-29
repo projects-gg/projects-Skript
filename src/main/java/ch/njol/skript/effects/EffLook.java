@@ -38,7 +38,7 @@ import ch.njol.util.Kleenean;
 import io.papermc.paper.entity.LookAnchor;
 
 @Name("Look At")
-@Description("Forces the mob(s) or player(s) to look at an entity, vector or location.")
+@Description("Forces the mob(s) or player(s) to look at an entity, vector or location. Vanilla max head pitches range from 10 to 50.")
 @Examples({
 	"force the head of the player to look towards event-entity's feet",
 	"",
@@ -48,7 +48,7 @@ import io.papermc.paper.entity.LookAnchor;
 		"\tdistance between {_player} and the event-location is less than 15",
 		"\tmake {_player} look towards vector from the {_player} to location of the event-entity",
 	"",
-	"force {_enderman} to face the block 3 meters above {_location} at head rotation speed 10.5 and max head pitch -40"
+	"force {_enderman} to face the block 3 meters above {_location} at head rotation speed 100.5 and max head pitch -40"
 })
 @Since("INSERT VERSION")
 @RequiredPlugins("Paper 1.17+, Paper 1.19.1+ (Players & Look Anchors)")
@@ -77,7 +77,7 @@ public class EffLook extends Effect {
 	private Expression<Number> speed, maxPitch;
 
 	/**
-	 * Can be Direction (Which will convert to Vector), Location or an Entity.
+	 * Can be Vector, Location or an Entity.
 	 */
 	private Expression<?> target;
 
