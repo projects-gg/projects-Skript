@@ -28,44 +28,45 @@ import ch.njol.skript.entity.EntityData;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.ExpressionType;
 import ch.njol.skript.lang.Literal;
-import ch.njol.skript.lang.SkriptParser;
+import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.util.Kleenean;
 import ch.njol.util.StringUtils;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import ch.njol.skript.lang.util.SimpleExpression;
 import org.bukkit.event.Event;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import java.util.Arrays;
 
 @Name("Nearest Entity")
 @Description("Gets the entity nearest to a location or another entity.")
-@Examples({"kill the nearest pig and cow relative to player",
+@Examples({
+	"kill the nearest pig and cow relative to player",
 	"teleport player to the nearest cow relative to player",
 	"teleport player to the nearest entity relative to player",
-	"on click:\n\tkill nearest pig"})
+	"",
+	"on click:",
+	"\tkill nearest pig"
+})
 @Since("INSERT VERSION")
 public class ExprNearestEntity extends SimpleExpression<Entity> {
 
 	static {
-		Skript.registerExpression(ExprNearestEntity.class, Entity.class, ExpressionType.SIMPLE,
+		Skript.registerExpression(ExprNearestEntity.class, Entity.class, ExpressionType.COMBINED,
 			"[the] nearest %*entitydatas% [[relative] to %entity/location%]",
 			"[the] %*entitydatas% nearest [to %entity/location%]");
 	}
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
-	@NonNull
 	private EntityData<?>[] entityDatas;
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
-	@NonNull
 	private Expression<?> relativeTo;
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, SkriptParser.ParseResult parseResult) {
+	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
 		entityDatas = ((Literal<EntityData<?>>) exprs[0]).getArray();
 		if (entityDatas.length != Arrays.stream(entityDatas).distinct().count()) {
 			Skript.error("Entity list may not contain duplicate entities");
