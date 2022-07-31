@@ -22,10 +22,21 @@ import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.parser.ParserInstance;
 import ch.njol.util.Kleenean;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Represents a general part of the syntax.
  */
-public interface SyntaxElement {
+public interface SyntaxElement extends org.skriptlang.skript.lang.SyntaxElement {
+
+	@Override
+	default boolean init(org.skriptlang.skript.lang.expression.Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
+		Expression<?>[] converted = new Expression[exprs.length];
+		for (int i = 0; i < exprs.length; i++)
+			converted[i] = Expression.fromNew(exprs[i]);
+		return init(converted, matchedPattern, isDelayed, parseResult);
+	}
 
 	/**
 	 * Called just after the constructor.

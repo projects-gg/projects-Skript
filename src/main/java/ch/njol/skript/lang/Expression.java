@@ -24,16 +24,21 @@ import ch.njol.skript.classes.Changer.ChangeMode;
 import ch.njol.skript.classes.Changer.ChangerUtils;
 import ch.njol.skript.classes.Converter;
 import ch.njol.skript.conditions.CondIsSet;
+import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.util.ConvertedExpression;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.skript.log.ErrorQuality;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.slot.Slot;
 import ch.njol.util.Checker;
+import ch.njol.util.Kleenean;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.ItemStack;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.bukkit.event.BukkitTriggerContext;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
+import java.lang.reflect.Array;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Spliterators;
@@ -48,7 +53,7 @@ import java.util.stream.StreamSupport;
  * @see SimpleExpression
  * @see SyntaxElement
  */
-public interface Expression<T> extends SyntaxElement, Debuggable {
+public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang.skript.lang.expression.Expression<T> {
 	
 	/**
 	 * Get the single value of this expression.
@@ -288,46 +293,184 @@ public interface Expression<T> extends SyntaxElement, Debuggable {
 	 * @throws UnsupportedOperationException (optional) - If this method was called on an unsupported ChangeMode.
 	 */
 	public void change(Event e, final @Nullable Object[] delta, final ChangeMode mode);
-	
-	/**
-	 * This method is called before this expression is set to another one.
-	 * The return value is what will be used for change. You can use modified
-	 * version of initial delta array or create a new one altogether
-	 * <p>
-	 * Default implementation will convert slots to items when they're set
-	 * to variables, as specified in Skript documentation.
-	 * @param changed What is about to be set.
-	 * @param delta Initial delta array.
-	 * @return Delta array to use for change.
-	 */
+
+	//
+	// Backwards Compatibility
+	//
+
+	@Override
+	default String toString(TriggerContext context, boolean debug) {
+		return Debuggable.super.toString(context, debug);
+	}
+
+	@Override
+	default boolean init(org.skriptlang.skript.lang.expression.Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
+		return SyntaxElement.super.init(exprs, matchedPattern, isDelayed, parseResult);
+	}
+
+	@Override
 	@Nullable
-	default Object[] beforeChange(Expression<?> changed, @Nullable Object[] delta) {
-		if (delta == null || delta.length == 0) // Nothing to nothing
-			return null;
-		
-		// Slots must be transformed to item stacks when writing to variables
-		// Also, some types must be cloned
-		Object[] newDelta = null;
-		if (changed instanceof Variable) {
-			newDelta = new Object[delta.length];
-			for (int i = 0; i < delta.length; i++) {
-				Object value = delta[i];
-				if (value instanceof Slot) {
-					ItemStack item = ((Slot) value).getItem();
-					if (item != null) {
-						item = item.clone(); // ItemStack in inventory is mutable
-					}
-					
-					newDelta[i] = item;
-				} else {
-					newDelta[i] = Classes.clone(delta[i]);
-				}
+	default T getSingle(TriggerContext context) {
+		if (context instanceof BukkitTriggerContext)
+			return getSingle(((BukkitTriggerContext) context).getEvent());
+		return null;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	default T[] getArray(TriggerContext context) {
+		if (context instanceof BukkitTriggerContext)
+			return getArray(((BukkitTriggerContext) context).getEvent());
+		return (T[]) Array.newInstance(getReturnType(), 0);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	default T[] getAll(TriggerContext context) {
+		if (context instanceof BukkitTriggerContext)
+			return getAll(((BukkitTriggerContext) context).getEvent());
+		return (T[]) Array.newInstance(getReturnType(), 0);
+	}
+
+	@Override
+	default boolean check(TriggerContext context, Checker<? super T> checker, boolean negated) {
+		if (context instanceof BukkitTriggerContext)
+			return check(((BukkitTriggerContext) context).getEvent(), checker, negated);
+		return negated;
+	}
+
+	@Override
+	default boolean check(TriggerContext context, Checker<? super T> checker) {
+		if (context instanceof BukkitTriggerContext)
+			return check(((BukkitTriggerContext) context).getEvent(), checker);
+		return false;
+	}
+
+	@Override
+	@Nullable
+	default Iterator<? extends T> iterator(TriggerContext context) {
+		if (context instanceof BukkitTriggerContext)
+			return iterator(((BukkitTriggerContext) context).getEvent());
+		return null;
+	}
+
+	@Override
+	default void change(TriggerContext context, @Nullable Object[] delta, ChangeMode mode) {
+		if (context instanceof BukkitTriggerContext)
+			change(((BukkitTriggerContext) context).getEvent(), delta, mode);
+	}
+
+	//
+	// Utility Methods
+	//
+
+	static <T> Expression<T> fromNew(org.skriptlang.skript.lang.expression.Expression<T> expression) {
+		return new Expression<T>() {
+			@Override
+			@Nullable
+			public T getSingle(Event e) {
+				return expression.getSingle(new BukkitTriggerContext(e, e.getEventName()));
 			}
-		}
-		// Everything else (inventories, actions, etc.) does not need special handling
-		
-		// Return the given delta or an Object[] copy of it, with some values transformed
-		return newDelta == null ? delta : newDelta;
+
+			@Override
+			public T[] getArray(Event e) {
+				return expression.getArray(new BukkitTriggerContext(e, e.getEventName()));
+			}
+
+			@Override
+			public T[] getAll(Event e) {
+				return expression.getAll(new BukkitTriggerContext(e, e.getEventName()));
+			}
+
+			@Override
+			public boolean isSingle() {
+				return expression.isSingle();
+			}
+
+			@Override
+			public boolean check(Event e, Checker<? super T> c, boolean negated) {
+				return expression.check(new BukkitTriggerContext(e, e.getEventName()), c, negated);
+			}
+
+			@Override
+			public boolean check(Event e, Checker<? super T> c) {
+				return expression.check(new BukkitTriggerContext(e, e.getEventName()), c);
+			}
+
+			@Override
+			@Nullable
+			public <R> Expression<? extends R> getConvertedExpression(Class<R>... to) {
+				org.skriptlang.skript.lang.expression.Expression<? extends R> converted = expression.getConvertedExpression(to);
+				return converted != null ? fromNew(converted) : null;
+			}
+
+			@Override
+			public Class<? extends T> getReturnType() {
+				return expression.getReturnType();
+			}
+
+			@Override
+			public boolean getAnd() {
+				return expression.getAnd();
+			}
+
+			@Override
+			public boolean setTime(int time) {
+				return expression.setTime(time);
+			}
+
+			@Override
+			public int getTime() {
+				return expression.getTime();
+			}
+
+			@Override
+			public boolean isDefault() {
+				return expression.isDefault();
+			}
+
+			@Override
+			@Nullable
+			public Iterator<? extends T> iterator(Event e) {
+				return expression.iterator(new BukkitTriggerContext(e, e.getEventName()));
+			}
+
+			@Override
+			public boolean isLoopOf(String s) {
+				return false;
+			}
+
+			@Override
+			public Expression<?> getSource() {
+				return fromNew(expression.getSource());
+			}
+
+			@Override
+			public Expression<? extends T> simplify() {
+				return fromNew(expression.simplify());
+			}
+
+			@Override
+			@Nullable
+			public Class<?>[] acceptChange(ChangeMode mode) {
+				return expression.acceptChange(mode);
+			}
+
+			@Override
+			public void change(Event e, @Nullable Object[] delta, ChangeMode mode) {
+				expression.change(new BukkitTriggerContext(e, e.getEventName()), delta, mode);
+			}
+
+			@Override
+			public String toString(@Nullable Event e, boolean debug) {
+				return expression.toString(e != null ? new BukkitTriggerContext(e, e.getEventName()) : TriggerContext.dummy(), debug);
+			}
+
+			@Override
+			public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
+				return expression.init(exprs, matchedPattern, isDelayed, parseResult);
+			}
+		};
 	}
 	
 }

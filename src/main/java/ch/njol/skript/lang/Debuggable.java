@@ -20,12 +20,22 @@ package ch.njol.skript.lang;
 
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.bukkit.event.BukkitTriggerContext;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * @author Peter Güttinger
  */
-public interface Debuggable {
-	
+public interface Debuggable extends org.skriptlang.skript.lang.Debuggable {
+
+	@Override
+	default String toString(TriggerContext context, boolean debug) {
+		Event event = null;
+		if (context instanceof BukkitTriggerContext)
+			event = ((BukkitTriggerContext) context).getEvent();
+		return toString(event, debug);
+	}
+
 	/**
 	 * @param e The event to get information to. This is always null if debug == false.
 	 * @param debug If true this should print more information, if false this should print what is shown to the end user
