@@ -174,7 +174,7 @@ public class ExprParse extends SimpleExpression<Object> {
 					Object[] os = new Object[resultCount];
 					for (int i = 0, slot = 0; i < r.exprs.length; i++) {
 						if (r.exprs[i] != null)
-							os[slot++] = plurals[i] ? r.exprs[i].getArray(null) : r.exprs[i].getSingle(null);
+							os[slot++] = plurals[i] ? ((Literal<?>) r.exprs[i]).getArray() : ((Literal<?>) r.exprs[i]).getSingle();
 					}
 					
 					return os;

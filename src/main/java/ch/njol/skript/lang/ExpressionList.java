@@ -28,6 +28,7 @@ import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -286,7 +287,7 @@ public class ExpressionList<T> implements Expression<T> {
 
 	@Override
 	public String toString() {
-		return toString(null, false);
+		return toString(TriggerContext.dummy(), false);
 	}
 
 	/**

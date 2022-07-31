@@ -20,10 +20,12 @@ package ch.njol.skript.lang;
 
 import java.lang.reflect.Array;
 
+import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.lang.util.SimpleLiteral;
 import ch.njol.skript.util.Utils;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * A list of literals. Can contain {@link UnparsedLiteral}s.
@@ -39,23 +41,20 @@ public class LiteralList<T> extends ExpressionList<T> implements Literal<T> {
 	public LiteralList(final Literal<? extends T>[] literals, final Class<T> returnType, final boolean and, final LiteralList<?> source) {
 		super(literals, returnType, and, source);
 	}
-	
-	@SuppressWarnings("null")
+
 	@Override
 	public T[] getArray() {
-		return getArray(null);
+		return getArray(TriggerContext.dummy());
 	}
-	
-	@SuppressWarnings("null")
+
 	@Override
 	public T getSingle() {
-		return getSingle(null);
+		return getSingle(TriggerContext.dummy());
 	}
-	
-	@SuppressWarnings("null")
+
 	@Override
 	public T[] getAll() {
-		return getAll(null);
+		return getAll(TriggerContext.dummy());
 	}
 	
 	@SuppressWarnings("unchecked")

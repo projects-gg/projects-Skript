@@ -22,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.lang.Debuggable;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * Represents a container for a single item. It could be an ordinary inventory
@@ -42,7 +43,7 @@ public abstract class Slot implements Debuggable {
 	
 	@Override
 	public final String toString() {
-		return toString(null, false);
+		return toString(TriggerContext.dummy(), false);
 	}
 	
 	/**

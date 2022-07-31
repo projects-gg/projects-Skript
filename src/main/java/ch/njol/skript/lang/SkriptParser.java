@@ -54,6 +54,7 @@ import com.google.common.primitives.Booleans;
 import org.bukkit.event.EventPriority;
 import org.bukkit.inventory.ItemStack;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -358,7 +359,7 @@ public class SkriptParser {
 						return r;
 					}
 					// Print errors, if we couldn't get the correct type
-					log.printError(e.toString(null, false) + " " + Language.get("is") + " " + notOfType(types), ErrorQuality.NOT_AN_EXPRESSION);
+					log.printError(e.toString(TriggerContext.dummy(), false) + " " + Language.get("is") + " " + notOfType(types), ErrorQuality.NOT_AN_EXPRESSION);
 					return null;
 				}
 				log.clear();
@@ -557,7 +558,7 @@ public class SkriptParser {
 					}
 
 					// Print errors, if we couldn't get the correct type
-					log.printError(e.toString(null, false) + " " + Language.get("is") + " " + notOfType(types), ErrorQuality.NOT_AN_EXPRESSION);
+					log.printError(e.toString(TriggerContext.dummy(), false) + " " + Language.get("is") + " " + notOfType(types), ErrorQuality.NOT_AN_EXPRESSION);
 					return null;
 				}
 				log.clear();

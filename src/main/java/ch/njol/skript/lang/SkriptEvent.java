@@ -27,6 +27,7 @@ import ch.njol.util.Kleenean;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * A SkriptEvent is like a condition. It is called when any of the registered events occurs.
@@ -83,7 +84,7 @@ public abstract class SkriptEvent implements SyntaxElement, Debuggable {
 
 	@Override
 	public String toString() {
-		return toString(null, false);
+		return toString(TriggerContext.dummy(), false);
 	}
 
 	/**

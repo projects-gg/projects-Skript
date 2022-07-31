@@ -81,8 +81,7 @@ public class EffVisualEffect extends Effect {
 		radius = (Expression<Number>) exprs[base + 4];
 
 		if (effects instanceof Literal) {
-			//noinspection ConstantConditions
-			VisualEffect[] effs = effects.getArray(null);
+			VisualEffect[] effs = ((Literal<VisualEffect>) effects).getArray();
 
 			boolean hasLocationEffect = false;
 			boolean hasEntityEffect = false;

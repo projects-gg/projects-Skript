@@ -69,6 +69,7 @@ import ch.njol.util.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -743,7 +744,7 @@ public class ScriptLoader {
 						continue;
 					
 					if (Skript.debug() || node.debug())
-						Skript.debug(SkriptColor.replaceColorChar(event + " (" + parsedEvent.getSecond().toString(null, true) + "):"));
+						Skript.debug(SkriptColor.replaceColorChar(event + " (" + parsedEvent.getSecond().toString(TriggerContext.dummy(), true) + "):"));
 
 					Class<? extends Event>[] eventClasses = parsedEvent.getSecond().getEventClasses();
 					if (eventClasses == null)
@@ -1130,7 +1131,7 @@ public class ScriptLoader {
 				}
 
 				if (Skript.debug() || n.debug())
-					Skript.debug(SkriptColor.replaceColorChar(getParser().getIndentation() + stmt.toString(null, true)));
+					Skript.debug(SkriptColor.replaceColorChar(getParser().getIndentation() + stmt.toString(TriggerContext.dummy(), true)));
 
 				items.add(stmt);
 			} else if (n instanceof SectionNode) {
@@ -1144,7 +1145,7 @@ public class ScriptLoader {
 					continue;
 
 				if (Skript.debug() || n.debug())
-					Skript.debug(SkriptColor.replaceColorChar(getParser().getIndentation() + section.toString(null, true)));
+					Skript.debug(SkriptColor.replaceColorChar(getParser().getIndentation() + section.toString(TriggerContext.dummy(), true)));
 
 				items.add(section);
 

@@ -21,6 +21,7 @@ package ch.njol.skript.util.visual;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.lang.Expression;
+import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.SyntaxElement;
 import ch.njol.util.Kleenean;
@@ -46,24 +47,23 @@ public class VisualEffect implements SyntaxElement, YggdrasilSerializable {
 	private float dX, dY, dZ = 0f;
 
 	public VisualEffect() {}
-	
-	@SuppressWarnings({"null", "ConstantConditions"})
+
 	@Override
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
 		type = VisualEffects.get(matchedPattern);
 
 		if (exprs.length > 4 && exprs[0] != null) {
-			data = exprs[0].getSingle(null);
+			data = ((Literal<?>) exprs[0]).getSingle();
 		}
 
 		if ((parseResult.mark & 1) != 0) {
-			dX = ((Number) exprs[exprs.length - 4].getSingle(null)).floatValue();
-			dY = ((Number) exprs[exprs.length - 3].getSingle(null)).floatValue();
-			dZ = ((Number) exprs[exprs.length - 2].getSingle(null)).floatValue();
+			dX = ((Number) ((Literal<?>) exprs[exprs.length - 4]).getSingle()).floatValue();
+			dY = ((Number) ((Literal<?>) exprs[exprs.length - 3]).getSingle()).floatValue();
+			dZ = ((Number) ((Literal<?>) exprs[exprs.length - 2]).getSingle()).floatValue();
 		}
 
 		if ((parseResult.mark & 2) != 0) {
-			speed = ((Number) exprs[exprs.length - 1].getSingle(null)).floatValue();
+			speed = ((Number) ((Literal<?>) exprs[exprs.length - 1]).getSingle()).floatValue();
 		}
 
 		return true;

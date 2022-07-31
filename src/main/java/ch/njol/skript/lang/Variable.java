@@ -52,6 +52,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -282,7 +283,7 @@ public class Variable<T> implements Expression<T> {
 
 	@Override
 	public String toString() {
-		return toString(null, false);
+		return toString(TriggerContext.dummy(), false);
 	}
 
 	@Override

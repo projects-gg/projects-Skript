@@ -36,6 +36,7 @@ import ch.njol.skript.registrations.Converters;
 import ch.njol.util.Checker;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * Represents a expression converted to another type. This, and not Expression, is the required return type of {@link SimpleExpression#getConvertedExpr(Class...)} because this
@@ -101,7 +102,7 @@ public class ConvertedExpression<F, T> implements Expression<T> {
 	
 	@Override
 	public String toString() {
-		return toString(null, false);
+		return toString(TriggerContext.dummy(), false);
 	}
 	
 	@Override

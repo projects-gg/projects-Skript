@@ -47,6 +47,7 @@ import ch.njol.skript.util.Patterns;
 import ch.njol.skript.util.ScriptOptions;
 import ch.njol.skript.util.Utils;
 import ch.njol.util.Kleenean;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * @author Peter Güttinger
@@ -155,7 +156,7 @@ public class EffChange extends Effect {
 			rs = changed.acceptChange(mode);
 			ClassInfo<?> c = Classes.getSuperClassInfo(changed.getReturnType());
 			Changer<?> changer = c.getChanger();
-			what = changer == null || !Arrays.equals(changer.acceptChange(mode), rs) ? changed.toString(null, false) : c.getName().withIndefiniteArticle();
+			what = changer == null || !Arrays.equals(changer.acceptChange(mode), rs) ? changed.toString(TriggerContext.dummy(), false) : c.getName().withIndefiniteArticle();
 		} finally {
 			h.stop();
 		}

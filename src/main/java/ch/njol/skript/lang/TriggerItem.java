@@ -26,6 +26,7 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.Skript;
 import ch.njol.util.StringUtils;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * Represents a trigger item, i.e. a trigger section, a condition or an effect.
@@ -134,7 +135,7 @@ public abstract class TriggerItem implements Debuggable {
 	
 	@Override
 	public final String toString() {
-		return toString(null, false);
+		return toString(TriggerContext.dummy(), false);
 	}
 	
 	public TriggerItem setParent(final @Nullable TriggerSection parent) {

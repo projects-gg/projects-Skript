@@ -39,6 +39,7 @@ import ch.njol.util.Checker;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
 import ch.njol.util.coll.iterator.NonNullIterator;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * Represents a literal, i.e. a static value like a number or a string.
@@ -154,7 +155,7 @@ public class SimpleLiteral<T> implements Literal<T>, DefaultExpression<T> {
 	
 	@Override
 	public String toString() {
-		return toString(null, false);
+		return toString(TriggerContext.dummy(), false);
 	}
 	
 	@Override

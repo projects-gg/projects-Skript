@@ -29,6 +29,7 @@ import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.util.LiteralUtils;
 import ch.njol.skript.util.Utils;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 import java.util.Locale;
 
@@ -129,7 +130,7 @@ public final class Parameter<T> {
 	
 	@Override
 	public String toString() {
-		return name + ": " + Utils.toEnglishPlural(type.getCodeName(), !single) + (def != null ? " = " + def.toString(null, true) : "");
+		return name + ": " + Utils.toEnglishPlural(type.getCodeName(), !single) + (def != null ? " = " + def.toString(TriggerContext.dummy(), true) : "");
 	}
 	
 }

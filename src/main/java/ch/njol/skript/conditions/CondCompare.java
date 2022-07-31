@@ -44,6 +44,7 @@ import ch.njol.skript.util.Patterns;
 import ch.njol.skript.util.Utils;
 import ch.njol.util.Checker;
 import ch.njol.util.Kleenean;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * @author Peter Güttinger
@@ -154,7 +155,7 @@ public class CondCompare extends Condition {
 	
 	public static String f(final Expression<?> e) {
 		if (e.getReturnType() == Object.class)
-			return e.toString(null, false);
+			return e.toString(TriggerContext.dummy(), false);
 		return Classes.getSuperClassInfo(e.getReturnType()).getName().withIndefiniteArticle();
 	}
 	

@@ -38,6 +38,7 @@ import ch.njol.util.Checker;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
 import ch.njol.util.coll.iterator.ArrayIterator;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * An implementation of the {@link Expression} interface. You should usually extend this class to make a new expression.
@@ -322,7 +323,7 @@ public abstract class SimpleExpression<T> implements Expression<T> {
 	
 	@Override
 	public String toString() {
-		return toString(null, false);
+		return toString(TriggerContext.dummy(), false);
 	}
 	
 	@Override

@@ -20,6 +20,7 @@ package ch.njol.skript.expressions;
 
 import java.util.List;
 
+import ch.njol.skript.lang.Literal;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
@@ -68,7 +69,7 @@ public class ExprTarget extends PropertyExpression<LivingEntity, Entity> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parser) {
-		type = exprs[matchedPattern] == null ? null : (EntityData<?>) exprs[matchedPattern].getSingle(null);
+		type = exprs[matchedPattern] == null ? null : ((Literal<EntityData<?>>) exprs[matchedPattern]).getSingle();
 		setExpr((Expression<? extends LivingEntity>) exprs[1 - matchedPattern]);
 		return true;
 	}

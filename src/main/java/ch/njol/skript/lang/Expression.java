@@ -294,6 +294,10 @@ public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang
 	 */
 	public void change(Event e, final @Nullable Object[] delta, final ChangeMode mode);
 
+	default Object[] beforeChange(Expression<?> changed, @Nullable Object[] delta) {
+		return org.skriptlang.skript.lang.expression.Expression.super.beforeChange(changed, delta);
+	}
+
 	//
 	// Backwards Compatibility
 	//

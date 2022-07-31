@@ -144,6 +144,7 @@ import ch.njol.util.StringUtils;
 import ch.njol.util.coll.CollectionUtils;
 import ch.njol.util.coll.iterator.CheckedIterator;
 import ch.njol.util.coll.iterator.EnumerationIterable;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 // TODO meaningful error if someone uses an %expression with percent signs% outside of text or a variable
 
@@ -1694,12 +1695,12 @@ public final class Skript extends JavaPlugin implements Listener {
 		logEx("Server platform: " + serverPlatform.name + (serverPlatform.supported ? "" : " (unsupported)"));
 		logEx();
 		logEx("Current node: " + SkriptLogger.getNode());
-		logEx("Current item: " + (item == null ? "null" : item.toString(null, true)));
+		logEx("Current item: " + (item == null ? "null" : item.toString(TriggerContext.dummy(), true)));
 		if (item != null && item.getTrigger() != null) {
 			Trigger trigger = item.getTrigger();
 			assert trigger != null;
 			File script = trigger.getScript();
-			logEx("Current trigger: " + trigger.toString(null, true) + " (" + (script == null ? "null" : script.getName()) + ", line " + trigger.getLineNumber() + ")");
+			logEx("Current trigger: " + trigger.toString(TriggerContext.dummy(), true) + " (" + (script == null ? "null" : script.getName()) + ", line " + trigger.getLineNumber() + ")");
 		}
 		logEx();
 		logEx("Thread: " + (thread == null ? Thread.currentThread() : thread).getName());

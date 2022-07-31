@@ -40,6 +40,7 @@ import ch.njol.util.coll.iterator.SingleItemIterator;
 import org.bukkit.ChatColor;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -291,7 +292,7 @@ public class VariableString implements Expression<String> {
 				((Expression<?>) string.get(0)).getReturnType() == String.class &&
 				((Expression<?>) string.get(0)).isSingle() &&
 				mode == StringMode.MESSAGE) {
-			String expr = ((Expression<?>) string.get(0)).toString(null, false);
+			String expr = ((Expression<?>) string.get(0)).toString(TriggerContext.dummy(), false);
 			Skript.warning(expr + " is already a text, so you should not put it in one (e.g. " + expr + " instead of " + "\"%" + expr.replace("\"", "\"\"") + "%\")");
 		}
 		return new VariableString(orig, sa, mode);
@@ -506,7 +507,7 @@ public class VariableString implements Expression<String> {
 	
 	@Override
 	public String toString() {
-		return toString(null, false);
+		return toString(TriggerContext.dummy(), false);
 	}
 	
 	/**

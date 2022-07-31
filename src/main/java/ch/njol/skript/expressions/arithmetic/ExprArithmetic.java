@@ -187,7 +187,7 @@ public class ExprArithmetic extends SimpleExpression<Number> {
 	@Override
 	public Expression<? extends Number> simplify() {
 		if (first instanceof Literal && second instanceof Literal)
-			return new SimpleLiteral<>(getArray(null), Number.class, false);
+			return new SimpleLiteral<>(get(null), Number.class, false);
 		return this;
 	}
 	
