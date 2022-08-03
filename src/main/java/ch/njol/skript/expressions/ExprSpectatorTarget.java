@@ -73,8 +73,10 @@ public class ExprSpectatorTarget extends SimpleExpression<Entity> {
 		if (players == null && !EVENT_SUPPORT) {
 			Skript.error("Your server platform does not support using 'spectator target' without players defined." +
 					"'spectator target of event-player'");
+			return false;
 		} else if (players == null && !getParser().isCurrentEvent(PlayerStartSpectatingEntityEvent.class, PlayerStopSpectatingEntityEvent.class)) {
 			Skript.error("The expression 'spectator target' may only be used in a start/stop/swap spectating target event");
+			return false;
 		}
 		return true;
 	}
