@@ -252,7 +252,7 @@ public abstract class SimpleExpression<T> implements Expression<T> {
 	@Override
 	public boolean setTime(int time) {
 		if (getParser().getHasDelayBefore() == Kleenean.TRUE && time != 0) {
-			Skript.error("Can't use time states after the event has already passed");
+			Skript.error("Can't use time states after the event has already passed.");
 			return false;
 		}
 		this.time = time;
@@ -262,7 +262,7 @@ public abstract class SimpleExpression<T> implements Expression<T> {
 	@SafeVarargs
 	protected final boolean setTime(int time, Class<? extends Event>... applicableEvents) {
 		if (getParser().getHasDelayBefore() == Kleenean.TRUE && time != 0) {
-			Skript.error("Can't use time states after the event has already passed");
+			Skript.error("Can't use time states after the event has already passed.");
 			return false;
 		}
 		if (!getParser().isCurrentEvent(applicableEvents))
@@ -273,7 +273,7 @@ public abstract class SimpleExpression<T> implements Expression<T> {
 
 	protected final boolean setTime(int time, Class<? extends Event> applicableEvent, @NonNull Expression<?>... mustbeDefaultVars) {
 		if (getParser().getHasDelayBefore() == Kleenean.TRUE && time != 0) {
-			Skript.error("Can't use time states after the event has already passed");
+			Skript.error("Can't use time states after the event has already passed.");
 			return false;
 		}
 		if (!getParser().isCurrentEvent(applicableEvent))
@@ -290,10 +290,15 @@ public abstract class SimpleExpression<T> implements Expression<T> {
 	@SafeVarargs
 	protected final boolean setTime(int time, Expression<?> mustbeDefaultVar, Class<? extends Event>... applicableEvents) {
 		if (getParser().getHasDelayBefore() == Kleenean.TRUE && time != 0) {
-			Skript.error("Can't use time states after the event has already passed");
+			Skript.error("A ");
 			return false;
 		}
-		if (mustbeDefaultVar == null || !mustbeDefaultVar.isDefault())
+		if (mustbeDefaultVar == null) {
+			Skript.exception(new SkriptAPIException("Default expression was null. If the default expression can be null, don't be using" +
+					" 'SimpleExpression#setTime(int, Expression<?>, Class<? extends Event>...)' instead use the setTime without an expression if null."));
+			return false;
+		}
+		if (!mustbeDefaultVar.isDefault())
 			return false;
 		if (getParser().isCurrentEvent(applicableEvents)) {
 			this.time = time;
