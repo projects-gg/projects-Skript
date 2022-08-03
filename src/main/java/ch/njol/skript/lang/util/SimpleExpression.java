@@ -290,7 +290,7 @@ public abstract class SimpleExpression<T> implements Expression<T> {
 	@SafeVarargs
 	protected final boolean setTime(int time, Expression<?> mustbeDefaultVar, Class<? extends Event>... applicableEvents) {
 		if (getParser().getHasDelayBefore() == Kleenean.TRUE && time != 0) {
-			Skript.error("A ");
+			Skript.error("Can't use time states after the event has already passed.");
 			return false;
 		}
 		if (mustbeDefaultVar == null) {
