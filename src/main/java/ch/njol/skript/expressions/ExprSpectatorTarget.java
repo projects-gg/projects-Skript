@@ -146,10 +146,11 @@ public class ExprSpectatorTarget extends SimpleExpression<Entity> {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public boolean setTime(int time) {
 		if (!EVENT_SUPPORT)
 			return false;
+		if (players == null)
+			return super.setTime(time, PlayerStartSpectatingEntityEvent.class, PlayerStopSpectatingEntityEvent.class);
 		return super.setTime(time, players, PlayerStartSpectatingEntityEvent.class, PlayerStopSpectatingEntityEvent.class);
 	}
 
