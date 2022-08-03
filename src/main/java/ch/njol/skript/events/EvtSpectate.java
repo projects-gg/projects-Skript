@@ -55,8 +55,8 @@ public class EvtSpectate extends SkriptEvent {
 	 */
 	private Kleenean pattern;
 
-	@SuppressWarnings("unchecked")
 	@Override
+	@SuppressWarnings("unchecked")
 	public boolean init(Literal<?>[] args, int matchedPattern, ParseResult parseResult) {
 		pattern = Kleenean.get(matchedPattern - 1);
 		datas = (Literal<EntityData<?>>) args[0];
