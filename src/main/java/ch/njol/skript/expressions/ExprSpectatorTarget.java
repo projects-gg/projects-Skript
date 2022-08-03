@@ -33,6 +33,7 @@ import ch.njol.skript.classes.data.DefaultChangers;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
+import ch.njol.skript.doc.RequiredPlugins;
 import ch.njol.skript.doc.Since;
 import ch.njol.skript.effects.Delay;
 import ch.njol.skript.lang.Expression;
@@ -52,6 +53,7 @@ import ch.njol.util.coll.CollectionUtils;
 		"\tpast spectator target was a zombie",
 		"\tset spectator target to the nearest skeleton"
 })
+@RequiredPlugins("Paper")
 @Since("2.4-alpha4, INSERT VERSION (Paper Spectator Event)")
 public class ExprSpectatorTarget extends SimpleExpression<Entity> {
 
