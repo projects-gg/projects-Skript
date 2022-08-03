@@ -121,6 +121,7 @@ public class ExprSpectatorTarget extends SimpleExpression<Entity> {
 			if (entities.length == 0)
 				return;
 			DefaultChangers.entityChanger.change(entities, delta, mode);
+			return;
 		}
 		switch (mode) {
 			case SET:
