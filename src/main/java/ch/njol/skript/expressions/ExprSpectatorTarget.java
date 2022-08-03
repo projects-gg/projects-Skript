@@ -102,8 +102,8 @@ public class ExprSpectatorTarget extends SimpleExpression<Entity> {
 		return players.stream(event).map(Player::getSpectatorTarget).toArray(Entity[]::new);
 	}
 
-	@Nullable
 	@Override
+	@Nullable
 	public Class<?>[] acceptChange(ChangeMode mode) {
 		// Make 'spectator target' act as an entity changer. Will error in init for unsupported server platform.
 		if (players == null)
