@@ -16,7 +16,7 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package org.skriptlang.skript.localization;
+package org.skriptlang.skript.test.tests.localization;
 
 import static org.junit.Assert.assertEquals;
 

@@ -75,6 +75,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 
 import ch.njol.skript.aliases.Aliases;
@@ -631,9 +632,15 @@ public final class Skript extends JavaPlugin implements Listener {
 							info("Test development mode enabled. Test scripts are at " + TestMode.TEST_DIR);
 						} else {
 							info("Running all JUnit tests...");
-							long milliseconds = 0, tests = 0, fails = 0, ignored = 0;
+							long milliseconds = 0, tests = 0, fails = 0, ignored = 0, size = 0;
 							try {
-								for (Class<?> test : Utils.getClasses("ch.njol.skript.test", "tests")) {
+								List<Class<?>> classes = Lists.newArrayList(Utils.getClasses("ch.njol.skript.test", "tests"));
+								classes.addAll(Lists.newArrayList(Utils.getClasses("org.skriptlang.skript.test", "tests")));
+								// Test that requires package access.
+								classes.add(Class.forName("ch.njol.skript.variables.FlatFileStorageTest"));
+								size = classes.size();
+								for (Class<?> test : classes) {
+									info("Running JUnit test '" + test.getName() + "'");
 									Result junit = JUnitCore.runClasses(test);
 									TestTracker.testStarted("JUnit: '" + test.getName() + "'");
 									tests += junit.getRunCount();
@@ -650,10 +657,13 @@ public final class Skript extends JavaPlugin implements Listener {
 								}
 							} catch (IOException e) {
 								Skript.exception(e, "Failed to execute JUnit runtime tests.");
+							} catch (ClassNotFoundException e) {
+								// Should be the Skript test jar gradle task.
+								assert false;
 							}
 							if (ignored > 0)
 								Skript.warning("There were " + ignored + " ignored test cases! This can mean they are not properly setup in order for that class!");
-							info("Completed " + tests + " JUnit tests with " + fails + " failures in " + milliseconds + " milliseconds.");
+							info("Completed " + tests + " JUnit tests in " + size + " classes with " + fails + " failures in " + milliseconds + " milliseconds.");
 							info("Running all tests from " + TestMode.TEST_DIR);
 
 							// Treat parse errors as fatal testing failure

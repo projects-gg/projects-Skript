@@ -11,6 +11,10 @@ plugins {
 	id 'java'
 }
 
+configurations {
+    testImplementation.extendsFrom testShadow
+}
+
 allprojects {
 	repositories {
 		mavenCentral()
@@ -39,13 +43,8 @@ dependencies {
 
 	implementation fileTree(dir: 'lib', include: '*.jar')
 
-	// JUnit 4 Runner for Runtime tests.
-	shadow fileTree(dir: 'lib', include: 'junit-4.13.2.jar')
-	shadow fileTree(dir: 'lib', include: 'hamcrest-2.2.jar')
-
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.1'
-    testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.8.1'
-	testImplementation group: 'org.easymock', name: 'easymock', version: '4.2'
+	testShadow group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.1'
+	testShadow group: 'org.easymock', name: 'easymock', version: '4.2'
 }
 
 compileJava.options.encoding = 'UTF-8'
@@ -61,25 +60,21 @@ task checkAliases {
 	}
 }
 
+task testJar(type: ShadowJar) {
+	dependsOn(compileTestJava)
+	archiveName 'Skript.jar'
+    from sourceSets.test.output, sourceSets.main.output, project.configurations.testShadow
+}
+
 task jar(overwrite: true, type: ShadowJar) {
 	dependsOn checkAliases
 	archiveName jarName ? 'Skript.jar' : jarName
 	from sourceSets.main.output
-	dependencies {
-		exclude(dependency('org.hamcrest:.*'))
-		exclude(dependency('org.junit:.*'))
-		exclude(dependency('junit:.*'))
-	}
 }
 
 task build(overwrite: true, type: ShadowJar) {
 	archiveName jarName ? 'Skript.jar' : jarName
 	from sourceSets.main.output
-	dependencies {
-		exclude(dependency('org.hamcrest:.*'))
-		exclude(dependency('org.junit:.*'))
-		exclude(dependency('junit:.*'))
-	}
 }
 
 task relocateShadowJar(type: ConfigureShadowRelocation) {
@@ -185,7 +180,7 @@ tasks.register('testNaming') {
 // Create a test task with given name, environments dir/file, dev mode and java version.
 void createTestTask(String name, String environments, boolean devMode, int javaVersion, boolean genDocs) {
 	tasks.register(name, JavaExec) {
-		dependsOn jar, testNaming
+		dependsOn testJar, testNaming
 		javaLauncher = javaToolchains.launcherFor {
 	        languageVersion = JavaLanguageVersion.of(javaVersion)
 	    }
@@ -332,8 +327,7 @@ task nightlyRelease(type: ShadowJar) {
 	}
 }
 
-
 test {
     useJUnitPlatform()
-    dependsOn jar
+    dependsOn testJar
 }

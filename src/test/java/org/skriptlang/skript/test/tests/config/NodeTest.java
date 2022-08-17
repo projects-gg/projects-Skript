@@ -16,7 +16,7 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package org.skriptlang.skript.config;
+package org.skriptlang.skript.test.tests.config;
 
 import static org.junit.Assert.assertArrayEquals;
 
