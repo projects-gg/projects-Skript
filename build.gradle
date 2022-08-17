@@ -23,11 +23,6 @@ allprojects {
 		maven { url 'https://repo.papermc.io/repository/maven-public/' }
 		maven { url 'https://ci.emc.gs/nexus/content/groups/aikar/' }
 	}
-	configurations.all {
-		resolutionStrategy {
-			force('org.junit.jupiter:junit-jupiter-engine:5.8.1')
-		}
-	}
 }
 
 dependencies {
@@ -63,7 +58,7 @@ task checkAliases {
 task testJar(type: ShadowJar) {
 	dependsOn(compileTestJava)
 	archiveName 'Skript.jar'
-    from sourceSets.test.output, sourceSets.main.output, project.configurations.testShadow
+	from sourceSets.test.output, sourceSets.main.output, project.configurations.testShadow
 }
 
 task jar(overwrite: true, type: ShadowJar) {
