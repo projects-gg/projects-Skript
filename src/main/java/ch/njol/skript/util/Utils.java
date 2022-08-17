@@ -200,7 +200,7 @@ public abstract class Utils {
 				jar.close();
 			} catch (IOException e) {}
 		}
-		return classes.toArray(Class<?>[]::new);
+		return classes.toArray(new Class<?>[classes.size()]);
 	}
 
 	@Nullable
