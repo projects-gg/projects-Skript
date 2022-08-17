@@ -50,6 +50,7 @@ public class AliasesTest {
 
 		// Contains assert inside serialize method too, Njol mentioned this.
 		assert Classes.serialize(itemType) != null;
+		// This doesn't work anymore since Njol added this.
 		//assert Classes.serialize(itemType).equals(Classes.serialize(itemType));
 		assert !Classes.serialize(itemType).equals(Classes.serialize(new ItemType(itemstack)));
 	}

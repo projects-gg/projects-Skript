@@ -38,7 +38,8 @@ dependencies {
 
 	implementation fileTree(dir: 'lib', include: '*.jar')
 
-	testShadow group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.1'
+	//testShadow group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.1'
+	testShadow group: 'junit', name: 'junit', version: '4.12'
 	testShadow group: 'org.easymock', name: 'easymock', version: '4.2'
 }
 
