@@ -63,7 +63,7 @@ public class ExprBlocks extends SimpleExpression<Block> {
 				"[(all [[of] the]|the)] blocks from %location% [on] %direction%",
 				"[(all [[of] the]|the)] blocks from %location% to %location%",
 				"[(all [[of] the]|the)] blocks between %location% and %location%",
-				"[(all [[of] the]|the)] blocks within %location% and %location%",
+				"[(all [[of] the]|the)] blocks within %location% (to|and) %location%",
 				"[(all [[of] the]|the)] blocks (in|within) %chunk%");
 	}
 	
