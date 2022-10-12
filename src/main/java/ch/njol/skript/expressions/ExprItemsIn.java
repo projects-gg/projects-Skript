@@ -80,21 +80,6 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 		return true;
 	}
 
-	private boolean isAllowedItem(@Nullable ItemType[] types, @Nullable ItemStack item) {
-		if (types == null)
-			return item != null;
-		else if (item == null)
-			return false;
-
-		ItemType potentiallyAllowedItem = new ItemType(item);
-		for (ItemType type : types) {
-			if (potentiallyAllowedItem.isSimilar(type))
-				return true;
-		}
-
-		return false;
-	}
-
 	@Override
 	@SuppressWarnings("null")
 	protected Slot[] get(final Event e) {
@@ -168,6 +153,21 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 	@Override
 	public Class<Slot> getReturnType() {
 		return Slot.class;
+	}
+
+	private boolean isAllowedItem(@Nullable ItemType[] types, @Nullable ItemStack item) {
+		if (types == null)
+			return item != null;
+		else if (item == null)
+			return false;
+
+		ItemType potentiallyAllowedItem = new ItemType(item);
+		for (ItemType type : types) {
+			if (potentiallyAllowedItem.isSimilar(type))
+				return true;
+		}
+
+		return false;
 	}
 
 }
