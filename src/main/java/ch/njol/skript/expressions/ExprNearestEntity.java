@@ -76,26 +76,10 @@ public class ExprNearestEntity extends SimpleExpression<Entity> {
 		return true;
 	}
 
-	@Nullable
-	private Entity getNearestEntity(EntityData<?> entityData, Location relativePoint, @Nullable Entity excludedEntity) {
-		Entity nearestEntity = null;
-		double nearestDistance = -1;
-		for (Entity entity : relativePoint.getWorld().getEntitiesByClass(entityData.getType())) {
-			if (entity != excludedEntity && entityData.isInstance(entity)) {
-				double distance = entity.getLocation().distance(relativePoint);
-				if (nearestEntity == null || distance < nearestDistance) {
-					nearestDistance = distance;
-					nearestEntity = entity;
-				}
-			}
-		}
-		return nearestEntity;
-	}
-
 	@Override
-	protected Entity[] get(Event e) {
-		Object relativeTo = this.relativeTo.getSingle(e);
-		if (relativeTo == null)
+	protected Entity[] get(Event event) {
+		Object relativeTo = this.relativeTo.getSingle(event);
+		if (relativeTo == null || (relativeTo instanceof Location && ((Location) relativeTo).getWorld() == null))
 			return new Entity[0];
 		Entity[] nearestEntities = new Entity[entityDatas.length];
 		for (int i = 0; i < nearestEntities.length; i++) {
@@ -119,8 +103,24 @@ public class ExprNearestEntity extends SimpleExpression<Entity> {
 	}
 
 	@Override
-	public String toString(@Nullable Event e, boolean debug) {
-		return "nearest " + StringUtils.join(entityDatas) + " relative to " + relativeTo.toString(e, debug);
+	public String toString(@Nullable Event event, boolean debug) {
+		return "nearest " + StringUtils.join(entityDatas) + " relative to " + relativeTo.toString(event, debug);
+	}
+
+	@Nullable
+	private Entity getNearestEntity(EntityData<?> entityData, Location relativePoint, @Nullable Entity excludedEntity) {
+		Entity nearestEntity = null;
+		double nearestDistance = -1;
+		for (Entity entity : relativePoint.getWorld().getEntitiesByClass(entityData.getType())) {
+			if (entity != excludedEntity && entityData.isInstance(entity)) {
+				double distance = entity.getLocation().distance(relativePoint);
+				if (nearestEntity == null || distance < nearestDistance) {
+					nearestDistance = distance;
+					nearestEntity = entity;
+				}
+			}
+		}
+		return nearestEntity;
 	}
 
 }
