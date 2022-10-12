@@ -42,18 +42,20 @@ import ch.njol.skript.util.slot.InventorySlot;
 import ch.njol.skript.util.slot.Slot;
 import ch.njol.util.Kleenean;
 
-/**
- * @author Peter Güttinger
- */
 @Name("Items In")
-@Description({"All items in an inventory. Useful for looping or storing in a list variable.",
-	"Please note that the positions of the items in the inventory are not saved, only their order is preserved."})
-@Examples({"loop all items in the player's inventory:",
-	"	loop-item is enchanted",
-	"	remove loop-item from the player",
-	"set {inventory::%uuid of player%::*} to items in the player's inventory"})
-@Since("2.0")
+@Description({
+	"All items or specific type(s) of items in an inventory. Useful for looping or storing in a list variable.",
+	"Please note that the positions of the items in the inventory are not saved, only their order is preserved."
+})
+@Examples({
+	"loop all items in the player's inventory:",
+	"\tloop-item is enchanted",
+	"\tremove loop-item from the player",
+	"set {inventory::%uuid of player%::*} to items in the player's inventory"
+})
+@Since("2.0, INSERT VERSION (specific types of items)")
 public class ExprItemsIn extends SimpleExpression<Slot> {
+
 	static {
 		Skript.registerExpression(ExprItemsIn.class, Slot.class, ExpressionType.PROPERTY, "[(all [[of] the]|the)] (items|%-itemtypes%) ([with]in|of|contained in|out of) (|1¦inventor(y|ies)) %inventories%");
 	}
@@ -64,13 +66,13 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 	@Nullable
 	private Expression<ItemType> types;
 
-	@SuppressWarnings({"unchecked", "null"})
 	@Override
+	@SuppressWarnings({"unchecked", "null"})
 	/*
 	 * the parse result will be null if it is used via the ExprInventory expression, however the expression will never
 	 * be a variable when used with that expression (it is always a anonymous SimpleExpression)
 	 */
-	public boolean init(final Expression<?>[] exprs, final int matchedPattern, final Kleenean isDelayed, @Nullable final ParseResult parseResult) {
+	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, @Nullable ParseResult parseResult) {
 		types = (Expression<ItemType>) exprs[0];
 		invis = (Expression<Inventory>) exprs[1];
 		if (invis instanceof Variable && !invis.isSingle() && parseResult.mark != 1)
@@ -86,20 +88,19 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 
 		ItemType potentiallyAllowedItem = new ItemType(item);
 		for (ItemType type : types) {
-			if (potentiallyAllowedItem.isSimilar(type)) {
+			if (potentiallyAllowedItem.isSimilar(type))
 				return true;
-			}
 		}
 
 		return false;
 	}
 
-	@SuppressWarnings("null")
 	@Override
+	@SuppressWarnings("null")
 	protected Slot[] get(final Event e) {
-		final ArrayList<Slot> r = new ArrayList<>();
-		final ItemType[] types = this.types == null ? null : this.types.getArray(e);
-		for (final Inventory invi : invis.getArray(e)) {
+		ArrayList<Slot> r = new ArrayList<>();
+		ItemType[] types = this.types == null ? null : this.types.getArray(e);
+		for (Inventory invi : invis.getArray(e)) {
 			for (int i = 0; i < invi.getSize(); i++) {
 				if (isAllowedItem(types, invi.getItem(i)))
 					r.add(new InventorySlot(invi, i));
@@ -110,9 +111,9 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 
 	@Override
 	@Nullable
-	public Iterator<Slot> iterator(final Event e) {
-		final Iterator<? extends Inventory> is = invis.iterator(e);
-		final ItemType[] types = this.types == null ? null : this.types.getArray(e);
+	public Iterator<Slot> iterator(Event e) {
+		Iterator<? extends Inventory> is = invis.iterator(e);
+		ItemType[] types = this.types == null ? null : this.types.getArray(e);
 		if (is == null || !is.hasNext())
 			return null;
 		return new Iterator<Slot>() {
@@ -121,8 +122,8 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 
 			int next = 0;
 
-			@SuppressWarnings("null")
 			@Override
+			@SuppressWarnings("null")
 			public boolean hasNext() {
 				while (next < current.getSize() && !isAllowedItem(types, current.getItem(next)))
 					next++;
