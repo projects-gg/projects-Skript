@@ -61,7 +61,7 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 	}
 
 	@SuppressWarnings("null")
-	private Expression<Inventory> invis;
+	private Expression<Inventory> inventories;
 
 	@Nullable
 	private Expression<ItemType> types;
@@ -74,8 +74,8 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 	 */
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, @Nullable ParseResult parseResult) {
 		types = (Expression<ItemType>) exprs[0];
-		invis = (Expression<Inventory>) exprs[1];
-		if (invis instanceof Variable && !invis.isSingle() && parseResult.mark != 1)
+		inventories = (Expression<Inventory>) exprs[1];
+		if (inventories instanceof Variable && !inventories.isSingle() && parseResult.mark != 1)
 			Skript.warning("'items in {variable::*}' does not actually represent the items stored in the variable. Use either '{variable::*}' (e.g. 'loop {variable::*}') if the variable contains items, or 'items in inventories {variable::*}' if the variable contains inventories.");
 		return true;
 	}
@@ -100,7 +100,7 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 	protected Slot[] get(final Event e) {
 		ArrayList<Slot> r = new ArrayList<>();
 		ItemType[] types = this.types == null ? null : this.types.getArray(e);
-		for (Inventory invi : invis.getArray(e)) {
+		for (Inventory invi : inventories.getArray(e)) {
 			for (int i = 0; i < invi.getSize(); i++) {
 				if (isAllowedItem(types, invi.getItem(i)))
 					r.add(new InventorySlot(invi, i));
@@ -112,7 +112,7 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 	@Override
 	@Nullable
 	public Iterator<Slot> iterator(Event e) {
-		Iterator<? extends Inventory> is = invis.iterator(e);
+		Iterator<? extends Inventory> is = inventories.iterator(e);
 		ItemType[] types = this.types == null ? null : this.types.getArray(e);
 		if (is == null || !is.hasNext())
 			return null;
@@ -157,7 +157,7 @@ public class ExprItemsIn extends SimpleExpression<Slot> {
 
 	@Override
 	public String toString(final @Nullable Event e, final boolean debug) {
-		return "items in " + invis.toString(e, debug);
+		return "items in " + inventories.toString(e, debug);
 	}
 
 	@Override
