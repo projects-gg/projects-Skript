@@ -15,3 +15,4 @@ test "nearest entity does not allow duplicate entities":
 #	assert nearest creeper relative to {_cow} is {_close creeper} with "incorrect nearest creeper found"
 #	assert nearest entity relative to {_cow} is {_pig} with "incorrect nearest entity found"
 #	assert nearest entity relative to (location of {_cow}) is {_cow} with "incorrect nearest entity found when using location"
+#   delete all entities

@@ -54,8 +54,8 @@ public class ExprNearestEntity extends SimpleExpression<Entity> {
 
 	static {
 		Skript.registerExpression(ExprNearestEntity.class, Entity.class, ExpressionType.COMBINED,
-			"[the] nearest %*entitydatas% [[relative] to %entity/location%]",
-			"[the] %*entitydatas% nearest [to %entity/location%]");
+				"[the] nearest %*entitydatas% [[relative] to %entity/location%]",
+				"[the] %*entitydatas% nearest [to %entity/location%]");
 	}
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
@@ -76,7 +76,6 @@ public class ExprNearestEntity extends SimpleExpression<Entity> {
 		return true;
 	}
 
-
 	@Nullable
 	private Entity getNearestEntity(EntityData<?> entityData, Location relativePoint, @Nullable Entity excludedEntity) {
 		Entity nearestEntity = null;
@@ -96,9 +95,8 @@ public class ExprNearestEntity extends SimpleExpression<Entity> {
 	@Override
 	protected Entity[] get(Event e) {
 		Object relativeTo = this.relativeTo.getSingle(e);
-		if (relativeTo == null) {
+		if (relativeTo == null)
 			return new Entity[0];
-		}
 		Entity[] nearestEntities = new Entity[entityDatas.length];
 		for (int i = 0; i < nearestEntities.length; i++) {
 			if (relativeTo instanceof Entity) {
