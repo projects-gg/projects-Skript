@@ -72,7 +72,7 @@ public abstract class Statement extends TriggerItem implements SyntaxElement {
 	}
 
 	@Override
-	public String toString(TriggerContext context, boolean debug) {
+	public final String toString(TriggerContext context, boolean debug) {
 		return super.toString(context, debug);
 	}
 

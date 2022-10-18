@@ -43,13 +43,13 @@ public interface ChangeableExpression<Type> extends Expression<Type> {
 	 * @return Delta array to use for change.
 	 */
 	@Nullable
-	default Object[] beforeChange(Expression<?> changed, @Nullable Object[] delta) {
+	default Object[] beforeChange(Expression<?> changed, Object @Nullable [] delta) {
 		return beforeChangeLegacy(changed, delta);
 	}
 
-	void change(TriggerContext context, @Nullable Object[] delta, ChangeMode mode);
+	void change(TriggerContext context, Object @Nullable [] delta, ChangeMode mode);
 
-	static Object[] beforeChangeLegacy(Expression<?> changed, @Nullable Object[] delta) {
+	static Object[] beforeChangeLegacy(Expression<?> changed, Object@Nullable  [] delta) {
 		// TODO this is terrible, find a way to make this method NOT default
 		if (delta == null || delta.length == 0) // Nothing to nothing
 			return null;

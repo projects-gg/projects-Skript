@@ -35,8 +35,10 @@ import ch.njol.skript.log.ParseLogHandler;
 import ch.njol.skript.log.SkriptLogger;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.iterator.ConsumingIterator;
+import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.skriptlang.skript.lang.context.TriggerContext;
 import org.skriptlang.skript.lang.entry.EntryContainer;
 import org.skriptlang.skript.lang.entry.EntryData;
 import org.skriptlang.skript.lang.entry.EntryValidator;
@@ -120,6 +122,11 @@ public abstract class Structure implements SyntaxElement, Debuggable {
 		return init(literals, matchedPattern, parseResult, entryContainer);
 	}
 
+	@Override
+	public final String toString(TriggerContext context, boolean debug) {
+		return Debuggable.super.toString(context, debug);
+	}
+
 	public abstract boolean init(Literal<?>[] args, int matchedPattern, ParseResult parseResult, EntryContainer entryContainer);
 
 	/**
@@ -173,7 +180,7 @@ public abstract class Structure implements SyntaxElement, Debuggable {
 
 	@Override
 	public String toString() {
-		return toString(null, false);
+		return toString(TriggerContext.dummy(), false);
 	}
 
 	@Nullable

@@ -56,7 +56,9 @@ import java.util.stream.StreamSupport;
  * @see SimpleExpression
  * @see SyntaxElement
  */
-public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang.skript.lang.expression.Expression<T> {
+public interface Expression<T> extends SyntaxElement, Debuggable,
+	org.skriptlang.skript.lang.expression.Expression<T>, ChangeableExpression<T>,
+	TimeSensitiveExpression<T>, SimplifiableExpression<T>, ListExpression<T> {
 	
 	/**
 	 * Get the single value of this expression.
@@ -190,6 +192,7 @@ public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang
 	 * 
 	 * @return Whether this expression returns all values at once or only part of them.
 	 */
+	@Override
 	public boolean getAnd();
 	
 	/**
@@ -208,12 +211,14 @@ public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang
 	 * @see SimpleExpression#setTime(int, Expression, Class...)
 	 * @see ch.njol.skript.lang.parser.ParserInstance#isCurrentEvent(Class...)
 	 */
+	@Override
 	public boolean setTime(int time);
 	
 	/**
 	 * @return The value passed to {@link #setTime(int)} or 0 if it was never changed.
 	 * @see #setTime(int)
 	 */
+	@Override
 	public int getTime();
 	
 	/**
@@ -264,6 +269,7 @@ public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang
 	 * @return A reference to a simpler version of this expression. Can change this expression directly and return itself if applicable, i.e. no references to the expression before
 	 *         this method call should be kept!
 	 */
+	@Override
 	public Expression<? extends T> simplify();
 	
 	/**
@@ -362,8 +368,9 @@ public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang
 	}
 
 	@Override
-	default void change(TriggerContext context, @Nullable Object[] delta, ChangeMode mode) {
+	default void change(TriggerContext context, Object @Nullable [] delta, ChangeMode mode) {
 		if (context instanceof BukkitTriggerContext)
+			//noinspection ConstantConditions
 			change(((BukkitTriggerContext) context).getEvent(), delta, mode);
 	}
 
