@@ -20,10 +20,23 @@ package org.skriptlang.skript.lang;
 
 import org.skriptlang.skript.lang.context.TriggerContext;
 
+/**
+ * To be implemented on objects where the addition of available context may be useful.
+ * For example, obtaining the value(s) of an {@link org.skriptlang.skript.lang.expression.Expression}
+ *  may be useful for providing an accurate String representation.
+ */
 public interface Debuggable {
 
+	/**
+	 * @param context Context surrounding the object being converted into a String.
+	 * @param debug Whether additional, development-oriented information should be printed.
+	 * @return A String representation of this object, using available context and debug status if applicable.
+	 */
 	String toString(TriggerContext context, boolean debug);
 
+	/**
+	 * Should return <tt>{@link #toString(TriggerContext, boolean) toString}({@link TriggerContext#dummy()}, false)</tt>
+	 */
 	@Override
 	String toString();
 

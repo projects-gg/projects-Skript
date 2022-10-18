@@ -28,15 +28,18 @@ import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.util.ConvertedExpression;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.skript.log.ErrorQuality;
-import ch.njol.skript.registrations.Classes;
-import ch.njol.skript.util.slot.Slot;
+import ch.njol.skript.registrations.EventValues;
 import ch.njol.util.Checker;
 import ch.njol.util.Kleenean;
 import org.bukkit.event.Event;
-import org.bukkit.inventory.ItemStack;
 import org.eclipse.jdt.annotation.Nullable;
 import org.skriptlang.skript.bukkit.event.BukkitTriggerContext;
+import org.skriptlang.skript.lang.changer.ChangeableExpression;
 import org.skriptlang.skript.lang.context.TriggerContext;
+import org.skriptlang.skript.lang.converter.ConvertableExpression;
+import org.skriptlang.skript.lang.expression.ListExpression;
+import org.skriptlang.skript.lang.expression.SimplifiableExpression;
+import org.skriptlang.skript.base.event.eventvalues.TimeSensitiveExpression;
 
 import java.lang.reflect.Array;
 import java.util.Iterator;
@@ -295,7 +298,7 @@ public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang
 	public void change(Event e, final @Nullable Object[] delta, final ChangeMode mode);
 
 	default Object[] beforeChange(Expression<?> changed, @Nullable Object[] delta) {
-		return org.skriptlang.skript.lang.expression.Expression.super.beforeChange(changed, delta);
+		return ChangeableExpression.beforeChangeLegacy(changed, delta);
 	}
 
 	//
@@ -404,8 +407,11 @@ public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang
 			@Override
 			@Nullable
 			public <R> Expression<? extends R> getConvertedExpression(Class<R>... to) {
-				org.skriptlang.skript.lang.expression.Expression<? extends R> converted = expression.getConvertedExpression(to);
-				return converted != null ? fromNew(converted) : null;
+				if (expression instanceof ConvertableExpression) {
+					org.skriptlang.skript.lang.expression.Expression<? extends R> converted = ((ConvertableExpression<T>) expression).getConvertedExpression(to);
+					return converted != null ? fromNew(converted) : null;
+				}
+				return null;
 			}
 
 			@Override
@@ -415,22 +421,28 @@ public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang
 
 			@Override
 			public boolean getAnd() {
-				return expression.getAnd();
+				if (expression instanceof ListExpression)
+					return ((ListExpression<T>) expression).getAnd();
+				return false;
 			}
 
 			@Override
 			public boolean setTime(int time) {
-				return expression.setTime(time);
+				if (expression instanceof TimeSensitiveExpression)
+					return ((TimeSensitiveExpression<T>) expression).setTime(time);
+				return false;
 			}
 
 			@Override
 			public int getTime() {
-				return expression.getTime();
+				if (expression instanceof TimeSensitiveExpression)
+					return ((TimeSensitiveExpression<T>) expression).getTime();
+				return EventValues.TIME_NOW;
 			}
 
 			@Override
 			public boolean isDefault() {
-				return expression.isDefault();
+				return false;
 			}
 
 			@Override
@@ -451,18 +463,24 @@ public interface Expression<T> extends SyntaxElement, Debuggable, org.skriptlang
 
 			@Override
 			public Expression<? extends T> simplify() {
-				return fromNew(expression.simplify());
+				if (expression instanceof SimplifiableExpression)
+					return fromNew(((SimplifiableExpression<T>) expression).simplify());
+				return this;
 			}
 
 			@Override
 			@Nullable
+			@SuppressWarnings("ConstantConditions") // old implementation has bad annotations
 			public Class<?>[] acceptChange(ChangeMode mode) {
-				return expression.acceptChange(mode);
+				if (expression instanceof ChangeableExpression)
+					return ((ChangeableExpression<T>) expression).acceptChange(mode);
+				return null;
 			}
 
 			@Override
 			public void change(Event e, @Nullable Object[] delta, ChangeMode mode) {
-				expression.change(new BukkitTriggerContext(e, e.getEventName()), delta, mode);
+				if (expression instanceof ChangeableExpression)
+					((ChangeableExpression<T>) expression).change(new BukkitTriggerContext(e, e.getEventName()), delta, mode);
 			}
 
 			@Override

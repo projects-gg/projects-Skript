@@ -27,6 +27,7 @@ import ch.njol.skript.lang.parser.ParserInstance;
 import ch.njol.util.Kleenean;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -159,6 +160,11 @@ public abstract class Section extends TriggerSection implements SyntaxElement {
 
 	static {
 		ParserInstance.registerData(SectionContext.class, SectionContext::new);
+	}
+
+	@Override
+	public String toString(TriggerContext context, boolean debug) {
+		return super.toString(context, debug);
 	}
 
 	@SuppressWarnings("NotNullFieldNotInitialized")

@@ -23,8 +23,23 @@ import ch.njol.skript.lang.parser.ParserInstance;
 import ch.njol.util.Kleenean;
 import org.skriptlang.skript.lang.expression.Expression;
 
-public interface SyntaxElement {
+/**
+ * A SyntaxElement represents a general structure or instruction type for the language.
+ */
+public interface SyntaxElement extends Debuggable {
 
+	/**
+	 * Called just after the constructor.
+	 *
+	 * @param exprs All %expr%s included in the matching pattern in the order they appear in the pattern.
+	 * If an optional value was left out, it will still be included in this list holding the default value
+	 *  of the desired type which usually depends on the event.
+	 * @param matchedPattern The index of the pattern matched.
+	 * @param isDelayed Whether this expression is being used after some sort of delay.
+	 * @param parseResult Additional information about the parsing and matching results.
+	 * @return Whether this expression was initialised successfully.
+	 * An error should be printed prior to returning false to specify the cause.
+	 */
 	boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult);
 
 	/**

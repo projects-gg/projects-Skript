@@ -19,22 +19,14 @@
 package org.skriptlang.skript.lang.context;
 
 /**
- * TriggerContext is used to for providing essential information for {@link org.skriptlang.skript.lang.SyntaxElement}s
- *  that depend on specific information during runtime execution.
- * In cases where no specific context is necessary, {@link #dummy()} context is available.
+ * A TriggerContext implementation to be used when no specific context is actually needed.
+ * @see TriggerContext#dummy()
  */
-public interface TriggerContext {
+final class DummyContext implements TriggerContext {
 
-	/**
-	 * @return A name representing this context.
-	 */
-	String getName();
-
-	/**
-	 * @return A method to obtain a default context implementation (where no specific context is actually needed).
-	 */
-	static TriggerContext dummy() {
-		return new DummyContext();
+	@Override
+	public String getName() {
+		return "dummy";
 	}
 
 }

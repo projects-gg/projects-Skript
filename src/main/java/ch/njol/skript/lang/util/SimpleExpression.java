@@ -39,6 +39,7 @@ import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
 import ch.njol.util.coll.iterator.ArrayIterator;
 import org.skriptlang.skript.lang.context.TriggerContext;
+import org.skriptlang.skript.lang.expression.SimplifiableExpression;
 
 /**
  * An implementation of the {@link Expression} interface. You should usually extend this class to make a new expression.
@@ -46,7 +47,7 @@ import org.skriptlang.skript.lang.context.TriggerContext;
  * @see Skript#registerExpression(Class, Class, ExpressionType, String...)
  * @author Peter Güttinger
  */
-public abstract class SimpleExpression<T> implements Expression<T> {
+public abstract class SimpleExpression<T> implements Expression<T>, SimplifiableExpression<T> {
 	
 	private int time = 0;
 	

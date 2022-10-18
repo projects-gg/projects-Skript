@@ -21,20 +21,36 @@ package org.skriptlang.skript.bukkit.event;
 import org.bukkit.event.Event;
 import org.skriptlang.skript.lang.context.TriggerContext;
 
+/**
+ * A TriggerContext implementation to be used for {@link org.skriptlang.skript.lang.SyntaxElement}s that
+ *  depend on a Bukkit {@link Event}.
+ */
 public class BukkitTriggerContext implements TriggerContext {
 
 	private final Event event;
 	private final String name;
 
+	/**
+	 * @param event The Bukkit Event occurring for all {@link org.skriptlang.skript.lang.SyntaxElement}s
+	 *  processed through this context.
+	 * @param name The name of this Bukkit Event (something like {@link Event#getEventName()}).
+	 */
 	public BukkitTriggerContext(Event event, String name) {
 		this.event = event;
 		this.name = name;
 	}
 
+	/**
+	 * @return The Bukkit Event occurring for all {@link org.skriptlang.skript.lang.SyntaxElement}s
+	 *  processed through this context.
+	 */
 	public Event getEvent() {
 		return event;
 	}
 
+	/**
+	 * @return The name of this Bukkit Event (as specified in the constructor).
+	 */
 	@Override
 	public String getName() {
 		return name;

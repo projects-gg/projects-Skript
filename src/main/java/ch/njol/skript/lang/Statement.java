@@ -26,6 +26,7 @@ import ch.njol.skript.Skript;
 import ch.njol.skript.lang.function.EffFunctionCall;
 import ch.njol.skript.log.ParseLogHandler;
 import ch.njol.skript.log.SkriptLogger;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * Supertype of conditions and effects
@@ -68,6 +69,11 @@ public abstract class Statement extends TriggerItem implements SyntaxElement {
 		} finally {
 			log.stop();
 		}
+	}
+
+	@Override
+	public String toString(TriggerContext context, boolean debug) {
+		return super.toString(context, debug);
 	}
 
 }

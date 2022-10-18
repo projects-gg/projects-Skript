@@ -16,25 +16,18 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package org.skriptlang.skript.lang.context;
+package org.skriptlang.skript.lang.expression;
 
-/**
- * TriggerContext is used to for providing essential information for {@link org.skriptlang.skript.lang.SyntaxElement}s
- *  that depend on specific information during runtime execution.
- * In cases where no specific context is necessary, {@link #dummy()} context is available.
- */
-public interface TriggerContext {
+import ch.njol.skript.lang.SkriptParser.ParseResult;
+import ch.njol.util.Kleenean;
 
-	/**
-	 * @return A name representing this context.
-	 */
-	String getName();
+public interface DefaultExpression<Type> extends Expression<Type> {
 
-	/**
-	 * @return A method to obtain a default context implementation (where no specific context is actually needed).
-	 */
-	static TriggerContext dummy() {
-		return new DummyContext();
+	@Override
+	default boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
+		return init();
 	}
+
+	boolean init();
 
 }

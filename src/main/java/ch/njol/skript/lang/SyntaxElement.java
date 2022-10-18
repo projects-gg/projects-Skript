@@ -21,9 +21,7 @@ package ch.njol.skript.lang;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.parser.ParserInstance;
 import ch.njol.util.Kleenean;
-
-import java.util.Arrays;
-import java.util.List;
+import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * Represents a general part of the syntax.
@@ -56,6 +54,13 @@ public interface SyntaxElement extends org.skriptlang.skript.lang.SyntaxElement 
 	 */
 	default ParserInstance getParser() {
 		return ParserInstance.get();
+	}
+
+	@Override
+	default String toString(TriggerContext context, boolean debug) {
+		if (this instanceof Debuggable)
+			return toString(context, debug);
+		return toString();
 	}
 
 }

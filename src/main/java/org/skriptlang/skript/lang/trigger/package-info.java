@@ -16,25 +16,8 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package org.skriptlang.skript.lang.context;
+@NonNullByDefault({DefaultLocation.PARAMETER, DefaultLocation.RETURN_TYPE, DefaultLocation.FIELD})
+package org.skriptlang.skript.lang.trigger;
 
-/**
- * TriggerContext is used to for providing essential information for {@link org.skriptlang.skript.lang.SyntaxElement}s
- *  that depend on specific information during runtime execution.
- * In cases where no specific context is necessary, {@link #dummy()} context is available.
- */
-public interface TriggerContext {
-
-	/**
-	 * @return A name representing this context.
-	 */
-	String getName();
-
-	/**
-	 * @return A method to obtain a default context implementation (where no specific context is actually needed).
-	 */
-	static TriggerContext dummy() {
-		return new DummyContext();
-	}
-
-}
+import org.eclipse.jdt.annotation.DefaultLocation;
+import org.eclipse.jdt.annotation.NonNullByDefault;

@@ -16,25 +16,21 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package org.skriptlang.skript.lang.context;
+package org.skriptlang.skript.lang.expression;
 
-/**
- * TriggerContext is used to for providing essential information for {@link org.skriptlang.skript.lang.SyntaxElement}s
- *  that depend on specific information during runtime execution.
- * In cases where no specific context is necessary, {@link #dummy()} context is available.
- */
-public interface TriggerContext {
+import ch.njol.util.Checker;
+import org.skriptlang.skript.lang.context.TriggerContext;
+
+public interface ListExpression<Type> extends Expression<Type> {
 
 	/**
-	 * @return A name representing this context.
+	 * This method significantly influences {@link #check(TriggerContext, Checker)}
+	 *  and {@link #check(TriggerContext, Checker, boolean)} thus breaks conditions that use this expression if it returns a wrong value.
+	 *
+	 * This method will always return true if this is a {@link #isSingle() single} expression.
+	 *
+	 * @return Whether this expression returns all values at once or only part of them.
 	 */
-	String getName();
-
-	/**
-	 * @return A method to obtain a default context implementation (where no specific context is actually needed).
-	 */
-	static TriggerContext dummy() {
-		return new DummyContext();
-	}
+	boolean getAnd();
 
 }

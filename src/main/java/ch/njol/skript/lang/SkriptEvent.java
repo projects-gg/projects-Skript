@@ -49,6 +49,11 @@ public abstract class SkriptEvent implements SyntaxElement, Debuggable {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public String toString(TriggerContext context, boolean debug) {
+		return Debuggable.super.toString(context, debug);
+	}
+
 	/**
 	 * called just after the constructor
 	 *
