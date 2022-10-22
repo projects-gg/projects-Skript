@@ -18,10 +18,60 @@
  */
 package org.skriptlang.skript.base.event.eventvalues;
 
+import ch.njol.skript.Skript;
+import ch.njol.skript.lang.SkriptParser.ParseResult;
+import ch.njol.skript.log.ErrorQuality;
 import ch.njol.skript.registrations.EventValues;
+import ch.njol.util.Kleenean;
 import org.skriptlang.skript.lang.expression.Expression;
+import org.skriptlang.skript.lang.expression.ExpressionType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public interface TimeSensitiveExpression<Type> extends Expression<Type> {
+
+	/**
+	 * Registers an expression.
+	 *
+	 * @param expressionClass The expression's class
+	 * @param returnType The superclass of all values returned by the expression
+	 * @param type The expression's {@link ExpressionType type}. This is used to determine in which order to try to parse expressions.
+	 * @param patterns Skript patterns that match this expression
+	 * @throws IllegalArgumentException if returnType is not a normal class
+	 */
+	static <Element extends Expression<Type>, Type> void registerExpression(
+		Class<Element> expressionClass, Class<Type> returnType, ExpressionType type, String... patterns
+	) {
+
+		List<String> newPatterns = new ArrayList<>();
+		for (String pattern : patterns) {
+			newPatterns.add(pattern);
+			newPatterns.add("(past:)[the] (former|past|old) [state] [of] " + pattern);
+			newPatterns.add("(past:)before [the event]" + pattern);
+			newPatterns.add("(future:)[the] (future|to-be|new) [state] [of] " + pattern);
+			newPatterns.add("(future:)(-to-be| after[(wards| the event)])");
+		}
+
+		Skript.registerExpression(expressionClass, returnType, type, newPatterns.toArray(new String[0]));
+	}
+
+	@Override
+	default boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
+		boolean past = parseResult.hasTag("past");
+		if (past || parseResult.hasTag("future")) {
+			if (isDelayed == Kleenean.TRUE) {
+				Skript.error("Cannot use time states after the event has already passed", ErrorQuality.SEMANTIC_ERROR);
+				return false;
+			}
+			if (!setTime(past ? EventValues.TIME_PAST : EventValues.TIME_FUTURE)) {
+				Skript.error(this + " does not have a " + (past ? "past" : "future") + " state", ErrorQuality.SEMANTIC_ERROR);
+				return false;
+			}
+		}
+
+		return true;
+	}
 
 	/**
 	 * Sets the time of this expression, i.e. whether the returned value represents this expression before, during or after an event.

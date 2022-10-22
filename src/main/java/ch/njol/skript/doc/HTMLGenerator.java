@@ -35,13 +35,13 @@ import ch.njol.skript.SkriptAPIException;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.lang.Condition;
 import ch.njol.skript.lang.Effect;
-import ch.njol.skript.lang.ExpressionInfo;
 import ch.njol.skript.lang.SkriptEventInfo;
-import ch.njol.skript.lang.SyntaxElementInfo;
 import ch.njol.skript.lang.function.Functions;
 import ch.njol.skript.lang.function.JavaFunction;
 import ch.njol.skript.lang.function.Parameter;
 import ch.njol.skript.registrations.Classes;
+import org.skriptlang.skript.lang.SyntaxElementInfo;
+import org.skriptlang.skript.lang.expression.ExpressionInfo;
 
 /**
  * Template engine, primarily used for generating Skript documentation
@@ -89,19 +89,19 @@ public class HTMLGenerator {
 			}
 
 
-			if (o1.c.getAnnotation(NoDoc.class) != null) {
-				if (o2.c.getAnnotation(NoDoc.class) != null)
+			if (o1.getElementClass().getAnnotation(NoDoc.class) != null) {
+				if (o2.getElementClass().getAnnotation(NoDoc.class) != null)
 					return 0;
 				return 1;
-			} else if (o2.c.getAnnotation(NoDoc.class) != null)
+			} else if (o2.getElementClass().getAnnotation(NoDoc.class) != null)
 				return -1;
 			
-			Name name1 = o1.c.getAnnotation(Name.class);
-			Name name2 = o2.c.getAnnotation(Name.class);
+			Name name1 = o1.getElementClass().getAnnotation(Name.class);
+			Name name2 = o2.getElementClass().getAnnotation(Name.class);
 			if (name1 == null)
-				throw new SkriptAPIException("Name annotation expected: " + o1.c);
+				throw new SkriptAPIException("Name annotation expected: " + o1.getElementClass());
 			if (name2 == null)
-				throw new SkriptAPIException("Name annotation expected: " + o2.c);
+				throw new SkriptAPIException("Name annotation expected: " + o2.getElementClass());
 			
 			return name1.value().compareTo(name2.value());
 		}
@@ -262,7 +262,7 @@ public class HTMLGenerator {
 					while (it.hasNext()) {
 						ExpressionInfo<?,?> info = it.next();
 						assert info != null;
-						if (info.c.getAnnotation(NoDoc.class) != null)
+						if (info.getElementClass().getAnnotation(NoDoc.class) != null)
 							continue;
 						String desc = generateAnnotated(descTemp, info, generated.toString());
 						generated.append(desc);
@@ -272,7 +272,7 @@ public class HTMLGenerator {
 					Collections.sort(effects, annotatedComparator);
 					for (SyntaxElementInfo<? extends Effect> info : effects) {
 						assert info != null;
-						if (info.c.getAnnotation(NoDoc.class) != null)
+						if (info.getElementClass().getAnnotation(NoDoc.class) != null)
 							continue;
 						generated.append(generateAnnotated(descTemp, info, generated.toString()));
 					}
@@ -281,7 +281,7 @@ public class HTMLGenerator {
 					Collections.sort(conditions, annotatedComparator);
 					for (SyntaxElementInfo<? extends Condition> info : conditions) {
 						assert info != null;
-						if (info.c.getAnnotation(NoDoc.class) != null)
+						if (info.getElementClass().getAnnotation(NoDoc.class) != null)
 							continue;
 						generated.append(generateAnnotated(descTemp, info, generated.toString()));
 					}
@@ -380,7 +380,7 @@ public class HTMLGenerator {
 	 * @return Generated HTML entry.
 	 */
 	private String generateAnnotated(String descTemp, SyntaxElementInfo<?> info, @Nullable String page) {
-		Class<?> c = info.c;
+		Class<?> c = info.getElementClass();
 		String desc = "";
 
 		Name name = c.getAnnotation(Name.class);
@@ -400,7 +400,7 @@ public class HTMLGenerator {
 				.replace("\\", "\\\\").replace("\"", "\\\"").replace("\t", "    "));
 
 		DocumentationId DocID = c.getAnnotation(DocumentationId.class);
-		String ID = DocID != null ? DocID.value() : info.c.getSimpleName();
+		String ID = DocID != null ? DocID.value() : c.getSimpleName();
 		// Fix duplicated IDs
 		if (page != null) {
 			if (page.contains("#" + ID + "\"")) {
@@ -446,7 +446,7 @@ public class HTMLGenerator {
 			String pattern = readFile(new File(template + "/templates/" + split[1]));
 			//Skript.info("Pattern is " + pattern);
 			StringBuilder patterns = new StringBuilder();
-			for (String line : getNullOrEmptyDefault(info.patterns, "Missing patterns.")) {
+			for (String line : getNullOrEmptyDefault(info.getPatterns(), "Missing patterns.")) {
 				assert line != null;
 				line = cleanPatterns(line);
 				String parsed = pattern.replace("${element.pattern}", line);

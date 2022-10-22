@@ -51,4 +51,20 @@ public enum ExpressionType {
 	 * Expressions whose pattern matches (almost) everything, e.g. "[the] [event-]<.+>"
 	 */
 	PATTERN_MATCHES_EVERYTHING;
+
+	public org.skriptlang.skript.lang.expression.ExpressionType getNew() {
+		switch (this) {
+			case SIMPLE:
+				return org.skriptlang.skript.lang.expression.ExpressionType.SIMPLE;
+			case NORMAL:
+			case COMBINED:
+				return org.skriptlang.skript.lang.expression.ExpressionType.COMBINED;
+			case PROPERTY:
+				return org.skriptlang.skript.lang.expression.ExpressionType.PROPERTY;
+			case PATTERN_MATCHES_EVERYTHING:
+				return org.skriptlang.skript.lang.expression.ExpressionType.PATTERN_MATCHES_EVERYTHING;
+			default:
+				throw new IllegalStateException("Unable to handle: " + this);
+		}
+	}
 }

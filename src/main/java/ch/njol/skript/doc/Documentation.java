@@ -33,9 +33,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import ch.njol.skript.Skript;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.conditions.CondCompare;
-import ch.njol.skript.lang.ExpressionInfo;
 import ch.njol.skript.lang.SkriptEventInfo;
-import ch.njol.skript.lang.SyntaxElementInfo;
 import ch.njol.skript.lang.function.Functions;
 import ch.njol.skript.lang.function.JavaFunction;
 import ch.njol.skript.lang.function.Parameter;
@@ -47,6 +45,8 @@ import ch.njol.util.StringUtils;
 import ch.njol.util.coll.CollectionUtils;
 import ch.njol.util.coll.iterator.IteratorIterable;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.skriptlang.skript.lang.SyntaxElementInfo;
+import org.skriptlang.skript.lang.expression.ExpressionInfo;
 
 /**
  * TODO list special expressions for events and event values
@@ -271,28 +271,29 @@ public class Documentation {
 	}
 
 	private static void insertSyntaxElement(final PrintWriter pw, final SyntaxElementInfo<?> info, final String type) {
-		if (info.c.getAnnotation(NoDoc.class) != null)
+		if (info.getElementClass().getAnnotation(NoDoc.class) != null)
 			return;
-		if (info.c.getAnnotation(Name.class) == null || info.c.getAnnotation(Description.class) == null || info.c.getAnnotation(Examples.class) == null || info.c.getAnnotation(Since.class) == null) {
-			Skript.warning("" + info.c.getSimpleName() + " is missing information");
+		Class<?> elementClass = info.getElementClass();
+		if (elementClass.getAnnotation(Name.class) == null || elementClass.getAnnotation(Description.class) == null || elementClass.getAnnotation(Examples.class) == null || elementClass.getAnnotation(Since.class) == null) {
+			Skript.warning("" + elementClass.getSimpleName() + " is missing information");
 			return;
 		}
-		final String desc = validateHTML(StringUtils.join(info.c.getAnnotation(Description.class).value(), "<br/>"), type + "s");
-		final String since = validateHTML(info.c.getAnnotation(Since.class).value(), type + "s");
+		final String desc = validateHTML(StringUtils.join(elementClass.getAnnotation(Description.class).value(), "<br/>"), type + "s");
+		final String since = validateHTML(elementClass.getAnnotation(Since.class).value(), type + "s");
 		if (desc == null || since == null) {
-			Skript.warning("" + info.c.getSimpleName() + "'s description or 'since' is invalid");
+			Skript.warning("" + elementClass.getSimpleName() + "'s description or 'since' is invalid");
 			return;
 		}
-		final String patterns = cleanPatterns(StringUtils.join(info.patterns, "\n", 0, info.c == CondCompare.class ? 8 : info.patterns.length));
+		final String patterns = cleanPatterns(StringUtils.join(info.getPatterns(), "\n", 0, elementClass == CondCompare.class ? 8 : info.getPatterns().length));
 		insertOnDuplicateKeyUpdate(pw, "syntax_elements",
 				"id, name, type, patterns, description, examples, since",
 				"patterns = TRIM(LEADING '\n' FROM CONCAT(patterns, '\n', '" + escapeSQL(patterns) + "'))",
-				escapeHTML("" + info.c.getSimpleName()),
-				escapeHTML(info.c.getAnnotation(Name.class).value()),
+				escapeHTML("" + elementClass.getSimpleName()),
+				escapeHTML(elementClass.getAnnotation(Name.class).value()),
 				type,
 				patterns,
 				desc,
-				escapeHTML(StringUtils.join(info.c.getAnnotation(Examples.class).value(), "\n")),
+				escapeHTML(StringUtils.join(elementClass.getAnnotation(Examples.class).value(), "\n")),
 				since);
 	}
 

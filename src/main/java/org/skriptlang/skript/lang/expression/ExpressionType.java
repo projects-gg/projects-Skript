@@ -16,8 +16,30 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-@NonNullByDefault({DefaultLocation.PARAMETER, DefaultLocation.RETURN_TYPE, DefaultLocation.FIELD})
-package org.skriptlang.skript.lang.trigger;
+package org.skriptlang.skript.lang.expression;
 
-import org.eclipse.jdt.annotation.DefaultLocation;
-import org.eclipse.jdt.annotation.NonNullByDefault;
+public enum ExpressionType {
+
+	/**
+	 * Expressions that only match simple text, e.g. "[the] player"
+	 */
+	SIMPLE,
+
+	/**
+	 * Expressions that contain other expressions, e.g. "[the] distance between %location% and %location%"
+	 *
+	 * @see #PROPERTY
+	 */
+	COMBINED,
+
+	/**
+	 * Property expressions, e.g. "[the] data value[s] of %items%"/"%items%'[s] data value[s]"
+	 */
+	PROPERTY,
+
+	/**
+	 * Expressions whose pattern matches (almost) everything, e.g. "[the] [event-]<.+>"
+	 */
+	PATTERN_MATCHES_EVERYTHING;
+
+}

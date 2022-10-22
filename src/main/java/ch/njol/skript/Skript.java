@@ -36,9 +36,6 @@ import ch.njol.skript.events.EvtSkript;
 import ch.njol.skript.hooks.Hook;
 import ch.njol.skript.lang.Condition;
 import ch.njol.skript.lang.Effect;
-import ch.njol.skript.lang.Expression;
-import ch.njol.skript.lang.ExpressionInfo;
-import ch.njol.skript.lang.ExpressionType;
 import ch.njol.skript.lang.Section;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptEventInfo;
@@ -110,6 +107,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.eclipse.jdt.annotation.Nullable;
 import org.skriptlang.skript.lang.context.TriggerContext;
 import org.skriptlang.skript.lang.entry.EntryValidator;
+import org.skriptlang.skript.lang.expression.Expression;
+import org.skriptlang.skript.lang.expression.ExpressionInfo;
+import org.skriptlang.skript.lang.expression.ExpressionType;
 import org.skriptlang.skript.lang.script.Script;
 import org.skriptlang.skript.lang.structure.Structure;
 import org.skriptlang.skript.lang.structure.StructureInfo;
@@ -1353,14 +1353,37 @@ public final class Skript extends JavaPlugin implements Listener {
 	 * @param patterns Skript patterns that match this expression
 	 * @throws IllegalArgumentException if returnType is not a normal class
 	 */
-	public static <E extends Expression<T>, T> void registerExpression(final Class<E> c, final Class<T> returnType, final ExpressionType type, final String... patterns) throws IllegalArgumentException {
+	public static <Element extends Expression<Type>, Type> void registerExpression(
+		Class<Element> c, Class<Type> returnType, ExpressionType type, String... patterns
+	) throws IllegalArgumentException {
 		checkAcceptRegistrations();
+
 		if (returnType.isAnnotation() || returnType.isArray() || returnType.isPrimitive())
 			throw new IllegalArgumentException("returnType must be a normal type");
+
 		String originClassPath = Thread.currentThread().getStackTrace()[2].getClassName();
-		final ExpressionInfo<E, T> info = new ExpressionInfo<>(patterns, returnType, c, originClassPath, type);
+		ExpressionInfo<Element, Type> info = new ExpressionInfo<>(c, originClassPath, returnType, type, patterns);
 		expressions.add(expressionTypesStartIndices[type.ordinal()], info);
 		for (int i = type.ordinal(); i < ExpressionType.values().length; i++) {
+			expressionTypesStartIndices[i]++;
+		}
+	}
+
+	public static <E extends ch.njol.skript.lang.Expression<T>, T> void registerExpression(
+		Class<E> c, Class<T> returnType, ch.njol.skript.lang.ExpressionType type, String... patterns
+	) throws IllegalArgumentException {
+		checkAcceptRegistrations();
+
+		if (returnType.isAnnotation() || returnType.isArray() || returnType.isPrimitive())
+			throw new IllegalArgumentException("returnType must be a normal type");
+
+		String originClassPath = Thread.currentThread().getStackTrace()[2].getClassName();
+		ch.njol.skript.lang.ExpressionInfo<E, T> info = new ch.njol.skript.lang.ExpressionInfo<>(patterns, returnType, c, originClassPath, type);
+
+		// Do this with new ExpressionType class
+		ExpressionType fixed = type.getNew();
+		expressions.add(expressionTypesStartIndices[fixed.ordinal()], info);
+		for (int i = fixed.ordinal(); i < ExpressionType.values().length; i++) {
 			expressionTypesStartIndices[i]++;
 		}
 	}
@@ -1374,11 +1397,11 @@ public final class Skript extends JavaPlugin implements Listener {
 		return new CheckedIterator<>(getExpressions(), new NullableChecker<ExpressionInfo<?, ?>>() {
 			@Override
 			public boolean check(final @Nullable ExpressionInfo<?, ?> i) {
-				if (i == null || i.returnType == Object.class)
+				if (i == null || i.getReturnType() == Object.class)
 					return true;
 				for (final Class<?> returnType : returnTypes) {
 					assert returnType != null;
-					if (Converters.converterExists(i.returnType, returnType))
+					if (Converters.converterExists(i.getReturnType(), returnType))
 						return true;
 				}
 				return false;

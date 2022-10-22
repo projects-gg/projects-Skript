@@ -44,17 +44,20 @@ public class LiteralList<T> extends ExpressionList<T> implements Literal<T> {
 
 	@Override
 	public T[] getArray() {
-		return getArray(TriggerContext.dummy());
+		//noinspection ConstantConditions
+		return getArray((Event) null);
 	}
 
 	@Override
 	public T getSingle() {
-		return getSingle(TriggerContext.dummy());
+		//noinspection ConstantConditions
+		return getSingle((Event) null);
 	}
 
 	@Override
 	public T[] getAll() {
-		return getAll(TriggerContext.dummy());
+		//noinspection ConstantConditions
+		return getAll((Event) null);
 	}
 	
 	@SuppressWarnings("unchecked")

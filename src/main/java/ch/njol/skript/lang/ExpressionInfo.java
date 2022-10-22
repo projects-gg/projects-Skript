@@ -20,8 +20,8 @@ package ch.njol.skript.lang;
 
 import org.eclipse.jdt.annotation.Nullable;
 
-public class ExpressionInfo<E extends Expression<T>, T> extends SyntaxElementInfo<E> {
-	
+public class ExpressionInfo<E extends Expression<T>, T> extends org.skriptlang.skript.lang.expression.ExpressionInfo<E, T> {
+
 	public Class<T> returnType;
 	@Nullable
 	public ExpressionType expressionType;
@@ -31,25 +31,13 @@ public class ExpressionInfo<E extends Expression<T>, T> extends SyntaxElementInf
 	}
 	
 	public ExpressionInfo(final String[] patterns, final Class<T> returnType, final Class<E> c, final String originClassPath, @Nullable ExpressionType expressionType) throws IllegalArgumentException {
-		super(patterns, c, originClassPath);
+		super(c, originClassPath, returnType, getNonNullExpressionType(expressionType).getNew(), patterns);
 		this.returnType = returnType;
 		this.expressionType = expressionType;
 	}
-	
-	/**
-	 * Get the return type of this expression.
-	 * @return The return type of this Expression
-	 */
-	public Class<T> getReturnType() {
-		return returnType;
+
+	private static ExpressionType getNonNullExpressionType(@Nullable ExpressionType expressionType) {
+		return expressionType != null ? expressionType : ExpressionType.COMBINED;
 	}
-	
-	/**
-	 * Get the type of this expression.
-	 * @return The type of this Expression
-	 */
-	@Nullable
-	public ExpressionType getExpressionType() {
-		return expressionType;
-	}
+
 }
