@@ -64,10 +64,6 @@ public interface TimeSensitiveExpression<Type> extends Expression<Type> {
 				Skript.error("Cannot use time states after the event has already passed", ErrorQuality.SEMANTIC_ERROR);
 				return false;
 			}
-			if (!setTime(past ? EventValues.TIME_PAST : EventValues.TIME_FUTURE)) {
-				Skript.error(this + " does not have a " + (past ? "past" : "future") + " state", ErrorQuality.SEMANTIC_ERROR);
-				return false;
-			}
 		}
 
 		return true;
@@ -75,12 +71,10 @@ public interface TimeSensitiveExpression<Type> extends Expression<Type> {
 
 	/**
 	 * Sets the time of this expression, i.e. whether the returned value represents this expression before, during or after an event.
-	 * If this method returns false the expression will be discarded and an error message is printed.
 	 *
 	 * @param time {@link EventValues#TIME_PAST}, {@link EventValues#TIME_NOW}, or {@link EventValues#TIME_FUTURE}.
-	 * @return Whether this expression has distinct time states.
 	 */
-	boolean setTime(int time);
+	void setTime(int time);
 
 	/**
 	 * @return Whether this expression is before, during or after an event.

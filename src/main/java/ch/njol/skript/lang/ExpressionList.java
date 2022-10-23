@@ -39,7 +39,7 @@ import java.util.NoSuchElementException;
 /**
  * A list of expressions.
  */
-public class ExpressionList<T> implements Expression<T> {
+public class ExpressionList<T> extends org.skriptlang.skript.lang.expression.base.ExpressionList<T> implements Expression<T> {
 
 	protected final Expression<? extends T>[] expressions;
 	protected boolean and;
@@ -53,6 +53,7 @@ public class ExpressionList<T> implements Expression<T> {
 	}
 
 	protected ExpressionList(Expression<? extends T>[] expressions, Class<T> returnType, boolean and, @Nullable ExpressionList<?> source) {
+		super(expressions, returnType, and, source);
 		assert expressions != null;
 		this.expressions = expressions;
 		this.returnType = returnType;
@@ -168,7 +169,7 @@ public class ExpressionList<T> implements Expression<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	@Nullable
-	public <R> Expression<? extends R> getConvertedExpression(Class<R>... to) {
+	public <R> ExpressionList<? extends R> getConvertedExpression(Class<R>... to) {
 		Expression<? extends R>[] exprs = new Expression[expressions.length];
 		for (int i = 0; i < exprs.length; i++)
 			if ((exprs[i] = expressions[i].getConvertedExpression(to)) == null)
@@ -188,13 +189,9 @@ public class ExpressionList<T> implements Expression<T> {
 
 	/**
 	 * For use in {@link CondCompare} only.
-	 *
-	 * @return The old 'and' value
 	 */
-	public boolean setAnd(boolean and) {
-		boolean r = and;
+	public void setAnd(boolean and) {
 		this.and = and;
-		return r;
 	}
 
 	/**

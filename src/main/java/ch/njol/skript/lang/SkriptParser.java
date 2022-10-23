@@ -27,8 +27,6 @@ import ch.njol.skript.command.Commands;
 import ch.njol.skript.command.ScriptCommand;
 import ch.njol.skript.command.ScriptCommandEvent;
 import ch.njol.skript.expressions.ExprParse;
-import org.skriptlang.skript.lang.script.Script;
-import org.skriptlang.skript.lang.script.ScriptWarning;
 import ch.njol.skript.lang.function.ExprFunctionCall;
 import ch.njol.skript.lang.function.FunctionReference;
 import ch.njol.skript.lang.function.Functions;
@@ -50,11 +48,17 @@ import ch.njol.util.NonNullPair;
 import ch.njol.util.StringUtils;
 import ch.njol.util.coll.CollectionUtils;
 import com.google.common.primitives.Booleans;
-import org.bukkit.event.EventPriority;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.bukkit.event.BukkitTriggerContext;
 import org.skriptlang.skript.lang.context.TriggerContext;
+import org.skriptlang.skript.lang.converter.ConvertableExpression;
+import org.skriptlang.skript.lang.script.Script;
+import org.skriptlang.skript.lang.script.ScriptWarning;
+import org.skriptlang.skript.lang.SyntaxElement;
+import org.skriptlang.skript.lang.SyntaxElementInfo;
+import org.skriptlang.skript.lang.expression.Expression;
+import org.skriptlang.skript.lang.expression.base.ExpressionList;
 
 import java.util.ArrayList;
 import java.util.Deque;
@@ -78,9 +82,9 @@ import java.util.stream.Stream;
  * @author Peter Güttinger
  */
 public class SkriptParser {
-	
+
 	final String expr;
-	
+
 	public final static int PARSE_EXPRESSIONS = 1;
 	public final static int PARSE_LITERALS = 2;
 	public final static int ALL_FLAGS = PARSE_EXPRESSIONS | PARSE_LITERALS;
@@ -116,7 +120,7 @@ public class SkriptParser {
 	public SkriptParser(final SkriptParser other, final String expr) {
 		this(expr, other.flags, other.context);
 	}
-	
+
 	public final static String wildcard = "[^\"]*?(?:\"[^\"]*?\"[^\"]*?)*?";
 	public final static String stringMatcher = "\"[^\"]*?(?:\"\"[^\"]*)*?\"";
 	
@@ -153,6 +157,7 @@ public class SkriptParser {
 	 */
 	@SuppressWarnings("unchecked")
 	@Nullable
+	// TODO right now this returns the old Literal, but should be improved in the future
 	public static <T> Literal<? extends T> parseLiteral(String expr, final Class<T> c, final ParseContext context) {
 		expr = "" + expr.trim();
 		if (expr.isEmpty())
@@ -220,18 +225,19 @@ public class SkriptParser {
 		try {
 			while (source.hasNext()) {
 				SyntaxElementInfo<? extends T> info = source.next();
-				patternsLoop: for (int i = 0; i < info.patterns.length; i++) {
+				patternsLoop: for (int i = 0; i < info.getPatterns().length; i++) {
 					log.clear();
 					try {
-						String pattern = info.patterns[i];
+						String pattern = info.getPatterns()[i];
 						assert pattern != null;
 						ParseResult res;
 						try {
 							res = parse_i(pattern, 0, 0);
 						} catch (MalformedPatternException e) {
-							String message = "pattern compiling exception, element class: " + info.c.getName();
+							String message = "pattern compiling exception, element class: " + info.getElementClass().getName();
 							try {
-								JavaPlugin providingPlugin = JavaPlugin.getProvidingPlugin(info.c);
+								// TODO javaplugin bad, change in the future
+								JavaPlugin providingPlugin = JavaPlugin.getProvidingPlugin(info.getElementClass());
 								message += " (provided by " + providingPlugin.getName() + ")";
 							} catch (IllegalArgumentException | IllegalStateException ignored) {}
 							throw new RuntimeException(message, e);
@@ -247,15 +253,15 @@ public class SkriptParser {
 										ExprInfo vi = getExprInfo(name);
 										DefaultExpression<?> expr = vi.classes[0].getDefaultExpression();
 										if (expr == null)
-											throw new SkriptAPIException("The class '" + vi.classes[0].getCodeName() + "' does not provide a default expression. Either allow null (with %-" + vi.classes[0].getCodeName() + "%) or make it mandatory [pattern: " + info.patterns[i] + "]");
+											throw new SkriptAPIException("The class '" + vi.classes[0].getCodeName() + "' does not provide a default expression. Either allow null (with %-" + vi.classes[0].getCodeName() + "%) or make it mandatory [pattern: " + info.getPatterns()[i] + "]");
 										if (!(expr instanceof Literal) && (vi.flagMask & PARSE_EXPRESSIONS) == 0)
-											throw new SkriptAPIException("The default expression of '" + vi.classes[0].getCodeName() + "' is not a literal. Either allow null (with %-*" + vi.classes[0].getCodeName() + "%) or make it mandatory [pattern: " + info.patterns[i] + "]");
+											throw new SkriptAPIException("The default expression of '" + vi.classes[0].getCodeName() + "' is not a literal. Either allow null (with %-*" + vi.classes[0].getCodeName() + "%) or make it mandatory [pattern: " + info.getPatterns()[i] + "]");
 										if (expr instanceof Literal && (vi.flagMask & PARSE_LITERALS) == 0)
-											throw new SkriptAPIException("The default expression of '" + vi.classes[0].getCodeName() + "' is a literal. Either allow null (with %-~" + vi.classes[0].getCodeName() + "%) or make it mandatory [pattern: " + info.patterns[i] + "]");
+											throw new SkriptAPIException("The default expression of '" + vi.classes[0].getCodeName() + "' is a literal. Either allow null (with %-~" + vi.classes[0].getCodeName() + "%) or make it mandatory [pattern: " + info.getPatterns()[i] + "]");
 										if (!vi.isPlural[0] && !expr.isSingle())
-											throw new SkriptAPIException("The default expression of '" + vi.classes[0].getCodeName() + "' is not a single-element expression. Change your pattern to allow multiple elements or make the expression mandatory [pattern: " + info.patterns[i] + "]");
+											throw new SkriptAPIException("The default expression of '" + vi.classes[0].getCodeName() + "' is not a single-element expression. Change your pattern to allow multiple elements or make the expression mandatory [pattern: " + info.getPatterns()[i] + "]");
 										if (vi.time != 0 && !expr.setTime(vi.time))
-											throw new SkriptAPIException("The default expression of '" + vi.classes[0].getCodeName() + "' does not have distinct time states. [pattern: " + info.patterns[i] + "]");
+											throw new SkriptAPIException("The default expression of '" + vi.classes[0].getCodeName() + "' does not have distinct time states. [pattern: " + info.getPatterns()[i] + "]");
 										if (!expr.init())
 											continue patternsLoop;
 										res.exprs[j] = expr;
@@ -263,7 +269,7 @@ public class SkriptParser {
 								}
 								x = x2;
 							}
-							T t = info.c.newInstance();
+							T t = info.getElementClass().newInstance();
 							if (t.init(res.exprs, i, getParser().getHasDelayBefore(), res)) {
 								log.printLog();
 								return t;
@@ -363,11 +369,13 @@ public class SkriptParser {
 					}
 					
 					// No directly same type found
-					Class<T>[] objTypes = (Class<T>[]) types; // Java generics... ?
-					final Expression<? extends T> r = e.getConvertedExpression(objTypes);
-					if (r != null) {
-						log.printLog();
-						return r;
+					if (e instanceof ConvertableExpression) {
+						Class<T>[] objTypes = (Class<T>[]) types; // Java generics... ?
+						final Expression<? extends T> r = ((ConvertableExpression) e).getConvertedExpression(objTypes);
+						if (r != null) {
+							log.printLog();
+							return r;
+						}
 					}
 					// Print errors, if we couldn't get the correct type
 					log.printError(e.toString(TriggerContext.dummy(), false) + " " + Language.get("is") + " " + notOfType(types), ErrorQuality.NOT_AN_EXPRESSION);
@@ -562,12 +570,13 @@ public class SkriptParser {
 					}
 					
 					// No directly same type found
-					Expression<?> r = e.getConvertedExpression((Class<Object>[]) types);
-					if (r != null) {
-						log.printLog();
-						return r;
+					if (e instanceof ConvertableExpression) {
+						Expression<?> r = ((ConvertableExpression) e).getConvertedExpression((Class<Object>[]) types);
+						if (r != null) {
+							log.printLog();
+							return r;
+						}
 					}
-
 					// Print errors, if we couldn't get the correct type
 					log.printError(e.toString(TriggerContext.dummy(), false) + " " + Language.get("is") + " " + notOfType(types), ErrorQuality.NOT_AN_EXPRESSION);
 					return null;
@@ -925,7 +934,7 @@ public class SkriptParser {
 					return null;
 				}
 				if (ps instanceof ExpressionList) {
-					if (!ps.getAnd()) {
+					if (!((ExpressionList<?>) ps).getAnd()) {
 						Skript.error("Function arguments must be separated by commas and optionally an 'and', but not an 'or'."
 								+ " Put the 'or' into a second set of parentheses if you want to make it a single parameter, e.g. 'give(player, (sword or axe))'");
 						log.printError();
@@ -987,7 +996,7 @@ public class SkriptParser {
 			if (res.exprs[i] == null)
 				as.get(i).setToDefault(event);
 			else
-				as.get(i).set(event, res.exprs[i].getArray(event));
+				as.get(i).set(event, res.exprs[i].getArray(new BukkitTriggerContext(event, event.getEventName())));
 		}
 		return true;
 	}
@@ -1345,7 +1354,7 @@ public class SkriptParser {
 		}
 		return r;
 	}
-	
+
 	/**
 	 * @see ParserInstance#get()
 	 */

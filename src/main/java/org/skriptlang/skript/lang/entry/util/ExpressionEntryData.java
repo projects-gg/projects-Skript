@@ -18,7 +18,6 @@
  */
 package org.skriptlang.skript.lang.entry.util;
 
-import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.ParseContext;
 import ch.njol.skript.lang.SkriptParser;
 import ch.njol.skript.lang.parser.ParserInstance;
@@ -26,6 +25,7 @@ import org.skriptlang.skript.lang.entry.KeyValueEntryData;
 import ch.njol.util.Kleenean;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.lang.expression.Expression;
 
 /**
  * A type of {@link KeyValueEntryData} designed to parse its value as an {@link Expression}.

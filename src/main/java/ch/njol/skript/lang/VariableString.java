@@ -40,7 +40,10 @@ import ch.njol.util.coll.iterator.SingleItemIterator;
 import org.bukkit.ChatColor;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.bukkit.event.BukkitTriggerContext;
 import org.skriptlang.skript.lang.context.TriggerContext;
+import org.skriptlang.skript.lang.expression.Expression;
+import org.skriptlang.skript.lang.expression.base.ExpressionList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +55,7 @@ import java.util.List;
  * 
  * @author Peter Güttinger
  */
-public class VariableString implements Expression<String> {
+public class VariableString implements ch.njol.skript.lang.Expression<String> {
 	
 	private final String orig;
 	
@@ -390,7 +393,7 @@ public class VariableString implements Expression<String> {
 		StringBuilder b = new StringBuilder();
 		for (Object o : string) {
 			if (o instanceof Expression<?>) {
-				b.append(Classes.toString(((Expression<?>) o).getArray(e), true, mode));
+				b.append(Classes.toString(((Expression<?>) o).getArray(new BukkitTriggerContext(e, e.getEventName())), true, mode));
 			} else {
 				b.append(o);
 			}
@@ -414,7 +417,7 @@ public class VariableString implements Expression<String> {
 		StringBuilder b = new StringBuilder();
 		for (Object o : string) {
 			if (o instanceof Expression<?>) {
-				b.append(Classes.toString(((Expression<?>) o).getArray(e), true, mode));
+				b.append(Classes.toString(((Expression<?>) o).getArray(new BukkitTriggerContext(e, e.getEventName())), true, mode));
 			} else {
 				b.append(o);
 			}
@@ -459,7 +462,7 @@ public class VariableString implements Expression<String> {
 					}
 					continue;
 				} else if (o instanceof Expression<?>) {
-					text = Classes.toString(((Expression<?>) o).getArray(e), true, mode);
+					text = Classes.toString(((Expression<?>) o).getArray(new BukkitTriggerContext(e, e.getEventName())), true, mode);
 				}
 				
 				assert text != null;
@@ -543,7 +546,7 @@ public class VariableString implements Expression<String> {
 		StringBuilder b = new StringBuilder("\"");
 		for (Object o : string) {
 			if (o instanceof Expression) {
-				b.append("%").append(((Expression<?>) o).toString(e, debug)).append("%");
+				b.append("%").append(((Expression<?>) o).toString(e != null ? new BukkitTriggerContext(e, e.getEventName()) : TriggerContext.dummy(), debug)).append("%");
 			} else {
 				b.append(o);
 			}
@@ -597,7 +600,7 @@ public class VariableString implements Expression<String> {
 	}
 	
 	@Override
-	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
+	public boolean init(ch.njol.skript.lang.Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
 		throw new UnsupportedOperationException();
 	}
 	
@@ -633,10 +636,9 @@ public class VariableString implements Expression<String> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	@Nullable
-	public <R> Expression<? extends R> getConvertedExpression(Class<R>... to) {
+	public <R> ch.njol.skript.lang.@Nullable Expression<? extends R> getConvertedExpression(Class<R>... to) {
 		if (CollectionUtils.containsSuperclass(to, String.class))
-			return (Expression<? extends R>) this;
+			return (ch.njol.skript.lang.Expression<? extends R>) this;
 		return ConvertedExpression.newInstance(this, to);
 	}
 
@@ -687,8 +689,12 @@ public class VariableString implements Expression<String> {
 	}
 	
 	@Override
-	public Expression<?> getSource() {
+	public ch.njol.skript.lang.Expression<?> getSource() {
 		return this;
+	}
+
+	public static <T> ch.njol.skript.lang.Expression<T> setStringMode(ch.njol.skript.lang.Expression<T> e, StringMode mode) {
+		return ch.njol.skript.lang.Expression.fromNew(setStringMode((Expression<T>) e, mode));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -707,7 +713,7 @@ public class VariableString implements Expression<String> {
 	}
 	
 	@Override
-	public Expression<String> simplify() {
+	public ch.njol.skript.lang.Expression<String> simplify() {
 		return this;
 	}
 

@@ -63,7 +63,7 @@ public class LiteralList<T> extends ExpressionList<T> implements Literal<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	@Nullable
-	public <R> Literal<? extends R> getConvertedExpression(final Class<R>... to) {
+	public <R> LiteralList<? extends R> getConvertedExpression(final Class<R>... to) {
 		final Literal<? extends R>[] exprs = new Literal[expressions.length];
 		final Class<?>[] classes = new Class[expressions.length];
 		for (int i = 0; i < exprs.length; i++) {

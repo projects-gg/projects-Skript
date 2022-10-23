@@ -20,8 +20,6 @@ package ch.njol.skript.patterns;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.classes.ClassInfo;
-import ch.njol.skript.lang.Expression;
-import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptParser;
 import ch.njol.skript.lang.SkriptParser.ExprInfo;
 import ch.njol.skript.lang.parser.ParserInstance;
@@ -33,6 +31,9 @@ import ch.njol.skript.util.Utils;
 import ch.njol.util.Kleenean;
 import ch.njol.util.NonNullPair;
 import org.jetbrains.annotations.Nullable;
+import org.skriptlang.skript.base.event.eventvalues.TimeSensitiveExpression;
+import org.skriptlang.skript.lang.expression.Expression;
+import org.skriptlang.skript.lang.expression.Literal;
 
 /**
  * A {@link PatternElement} that contains a type to be matched with an expressions, for example {@code %number%}.
@@ -129,14 +130,28 @@ public class TypePatternElement extends PatternElement {
 								if (expression instanceof Literal)
 									return null;
 
-								if (ParserInstance.get().getHasDelayBefore() == Kleenean.TRUE) {
-									Skript.error("Cannot use time states after the event has already passed", ErrorQuality.SEMANTIC_ERROR);
+								// New expression type check
+								if (expression instanceof TimeSensitiveExpression) {
+									if (ParserInstance.get().getHasDelayBefore() == Kleenean.TRUE) {
+										Skript.error("Cannot use time states after the event has already passed", ErrorQuality.SEMANTIC_ERROR);
+										return null;
+									}
+									((TimeSensitiveExpression<?>) expression).setTime(time);
+								} else {
+									Skript.error(expression + " does not have a " + (time == -1 ? "past" : "future") + " state", ErrorQuality.SEMANTIC_ERROR);
 									return null;
 								}
 
-								if (!expression.setTime(time)) {
-									Skript.error(expression + " does not have a " + (time == -1 ? "past" : "future") + " state", ErrorQuality.SEMANTIC_ERROR);
-									return null;
+								// Legacy expression check
+								if (expression instanceof ch.njol.skript.lang.Expression) {
+									if (ParserInstance.get().getHasDelayBefore() == Kleenean.TRUE) {
+										Skript.error("Cannot use time states after the event has already passed", ErrorQuality.SEMANTIC_ERROR);
+										return null;
+									}
+									if (!((ch.njol.skript.lang.Expression<?>) expression).setTime(time)) {
+										Skript.error(expression + " does not have a " + (time == -1 ? "past" : "future") + " state", ErrorQuality.SEMANTIC_ERROR);
+										return null;
+									}
 								}
 							}
 

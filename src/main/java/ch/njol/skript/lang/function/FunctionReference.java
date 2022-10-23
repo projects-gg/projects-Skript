@@ -23,18 +23,21 @@ import ch.njol.skript.Skript;
 import ch.njol.skript.SkriptAPIException;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.config.Node;
-import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser;
 import ch.njol.skript.lang.UnparsedLiteral;
 import ch.njol.skript.log.RetainingLogHandler;
 import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.registrations.Converters;
-import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.StringUtils;
 import ch.njol.util.coll.CollectionUtils;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
+import org.skriptlang.skript.bukkit.event.BukkitTriggerContext;
+import org.skriptlang.skript.lang.context.TriggerContext;
+import org.skriptlang.skript.lang.converter.ConvertableExpression;
+import org.skriptlang.skript.lang.expression.Expression;
+import org.skriptlang.skript.lang.expression.util.LiteralUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -209,7 +212,9 @@ public class FunctionReference<T> {
 			Parameter<?> p = sign.parameters[singleListParam ? 0 : i];
 			RetainingLogHandler log = SkriptLogger.startRetainingLog();
 			try {
-				Expression<?> e = parameters[i].getConvertedExpression(p.type.getC());
+				Expression<?> e = null;
+				if (parameters[i] instanceof ConvertableExpression)
+					e = ((ConvertableExpression<?>) parameters[i]).getConvertedExpression(p.type.getC());
 				if (e == null) {
 					if (first) {
 						if (LiteralUtils.hasUnparsedLiteral(parameters[i])) {
@@ -277,7 +282,7 @@ public class FunctionReference<T> {
 		if (singleListParam && parameters.length > 1) { // All parameters to one list
 			List<Object> l = new ArrayList<>();
 			for (Expression<?> parameter : parameters)
-				l.addAll(Arrays.asList(parameter.getArray(e)));
+				l.addAll(Arrays.asList(parameter.getArray(new BukkitTriggerContext(e, e.getEventName()))));
 			params[0] = l.toArray();
 			
 			// Don't allow mutating across function boundary; same hack is applied to variables
@@ -286,7 +291,7 @@ public class FunctionReference<T> {
 			}
 		} else { // Use parameters in normal way
 			for (int i = 0; i < parameters.length; i++) {
-				Object[] array = parameters[i].getArray(e);
+				Object[] array = parameters[i].getArray(new BukkitTriggerContext(e, e.getEventName()));
 				params[i] = Arrays.copyOf(array, array.length);
 				// Don't allow mutating across function boundary; same hack is applied to variables
 				for (int j = 0; j < params[i].length; j++) {
@@ -318,7 +323,7 @@ public class FunctionReference<T> {
 		for (int i = 0; i < parameters.length; i++) {
 			if (i != 0)
 				b.append(", ");
-			b.append(parameters[i].toString(e, debug));
+			b.append(parameters[i].toString(e != null ? new BukkitTriggerContext(e, e.getEventName()) : TriggerContext.dummy(), debug));
 		}
 		b.append(")");
 		return b.toString();

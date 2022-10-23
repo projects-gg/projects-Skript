@@ -18,9 +18,9 @@
  */
 package ch.njol.skript.patterns;
 
-import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.ParseContext;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
+import org.skriptlang.skript.lang.expression.Expression;
 
 import java.util.ArrayList;
 import java.util.Arrays;

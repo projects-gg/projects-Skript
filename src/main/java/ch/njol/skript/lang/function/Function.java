@@ -26,6 +26,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import ch.njol.skript.SkriptConfig;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.util.coll.CollectionUtils;
+import org.skriptlang.skript.bukkit.event.BukkitTriggerContext;
 
 /**
  * Functions can be called using arguments.
@@ -111,7 +112,7 @@ public abstract class Function<T> {
 			Object[] val = ps[i];
 			if (val == null) { // Go for default value
 				assert p.def != null; // Should've been parse error
-				val = p.def.getArray(e);
+				val = p.def.getArray(new BukkitTriggerContext(e, e.getEventName()));
 			}
 			
 			/*

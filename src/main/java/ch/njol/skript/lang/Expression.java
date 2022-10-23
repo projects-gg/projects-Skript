@@ -58,7 +58,7 @@ import java.util.stream.StreamSupport;
  */
 public interface Expression<T> extends SyntaxElement, Debuggable,
 	org.skriptlang.skript.lang.expression.Expression<T>, ChangeableExpression<T>,
-	TimeSensitiveExpression<T>, SimplifiableExpression<T>, ListExpression<T> {
+	SimplifiableExpression<T>, ListExpression<T> {
 	
 	/**
 	 * Get the single value of this expression.
@@ -211,14 +211,12 @@ public interface Expression<T> extends SyntaxElement, Debuggable,
 	 * @see SimpleExpression#setTime(int, Expression, Class...)
 	 * @see ch.njol.skript.lang.parser.ParserInstance#isCurrentEvent(Class...)
 	 */
-	@Override
 	public boolean setTime(int time);
 	
 	/**
 	 * @return The value passed to {@link #setTime(int)} or 0 if it was never changed.
 	 * @see #setTime(int)
 	 */
-	@Override
 	public int getTime();
 	
 	/**
@@ -379,6 +377,11 @@ public interface Expression<T> extends SyntaxElement, Debuggable,
 	//
 
 	static <T> Expression<T> fromNew(org.skriptlang.skript.lang.expression.Expression<T> expression) {
+		//noinspection ConstantConditions
+		if (expression == null) // Just in case
+			return null;
+		if (expression instanceof Expression)
+			return (Expression<T>) expression;
 		return new Expression<T>() {
 			@Override
 			@Nullable
@@ -435,8 +438,10 @@ public interface Expression<T> extends SyntaxElement, Debuggable,
 
 			@Override
 			public boolean setTime(int time) {
-				if (expression instanceof TimeSensitiveExpression)
-					return ((TimeSensitiveExpression<T>) expression).setTime(time);
+				if (expression instanceof TimeSensitiveExpression) {
+					((TimeSensitiveExpression<T>) expression).setTime(time);
+					return true;
+				}
 				return false;
 			}
 
