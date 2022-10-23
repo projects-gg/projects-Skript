@@ -20,13 +20,11 @@ package ch.njol.skript.lang;
 
 import java.lang.reflect.Array;
 
-import org.bukkit.event.Event;
+import ch.njol.skript.lang.util.ContextlessEvent;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.lang.util.SimpleLiteral;
 import ch.njol.skript.util.Utils;
-import org.skriptlang.skript.lang.context.TriggerContext;
-
 /**
  * A list of literals. Can contain {@link UnparsedLiteral}s.
  * 
@@ -44,20 +42,17 @@ public class LiteralList<T> extends ExpressionList<T> implements Literal<T> {
 
 	@Override
 	public T[] getArray() {
-		//noinspection ConstantConditions
-		return getArray((Event) null);
+		return getArray(ContextlessEvent.get());
 	}
 
 	@Override
 	public T getSingle() {
-		//noinspection ConstantConditions
-		return getSingle((Event) null);
+		return getSingle(ContextlessEvent.get());
 	}
 
 	@Override
 	public T[] getAll() {
-		//noinspection ConstantConditions
-		return getAll((Event) null);
+		return getAll(ContextlessEvent.get());
 	}
 	
 	@SuppressWarnings("unchecked")

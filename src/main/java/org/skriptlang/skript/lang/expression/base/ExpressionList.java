@@ -187,7 +187,7 @@ public class ExpressionList<Type> implements
 	}
 
 	@Override
-	public Class<? extends Type> getReturnType() {
+	public Class<Type> getReturnType() {
 		return returnType;
 	}
 

@@ -22,6 +22,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
+import ch.njol.skript.lang.util.ContextlessEvent;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -187,7 +188,7 @@ public class ExprArithmetic extends SimpleExpression<Number> {
 	@Override
 	public Expression<? extends Number> simplify() {
 		if (first instanceof Literal && second instanceof Literal)
-			return new SimpleLiteral<>(get(null), Number.class, false);
+			return new SimpleLiteral<>(get(ContextlessEvent.get()), Number.class, false);
 		return this;
 	}
 	

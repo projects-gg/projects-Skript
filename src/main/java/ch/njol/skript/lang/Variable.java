@@ -27,6 +27,7 @@ import ch.njol.skript.classes.Changer.ChangeMode;
 import ch.njol.skript.classes.Changer.ChangerUtils;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.classes.Comparator.Relation;
+import ch.njol.skript.lang.util.ContextlessEvent;
 import org.skriptlang.skript.lang.script.Script;
 import org.skriptlang.skript.lang.script.ScriptWarning;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
@@ -51,7 +52,6 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
-import org.skriptlang.skript.lang.context.TriggerContext;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -283,7 +283,7 @@ public class Variable<T> implements Expression<T> {
 
 	@Override
 	public String toString() {
-		return toString(TriggerContext.dummy(), false);
+		return toString(ContextlessEvent.get(), false);
 	}
 
 	@Override

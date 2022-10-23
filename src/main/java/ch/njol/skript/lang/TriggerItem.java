@@ -20,6 +20,7 @@ package ch.njol.skript.lang;
 
 import java.io.File;
 
+import ch.njol.skript.lang.util.ContextlessEvent;
 import org.skriptlang.skript.lang.script.Script;
 import ch.njol.skript.util.SkriptColor;
 import org.bukkit.event.Event;
@@ -27,7 +28,6 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.Skript;
 import ch.njol.util.StringUtils;
-import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * Represents a trigger item, i.e. a trigger section, a condition or an effect.
@@ -144,7 +144,7 @@ public abstract class TriggerItem implements Debuggable {
 	
 	@Override
 	public final String toString() {
-		return toString(TriggerContext.dummy(), false);
+		return toString(ContextlessEvent.get(), false);
 	}
 	
 	public TriggerItem setParent(final @Nullable TriggerSection parent) {

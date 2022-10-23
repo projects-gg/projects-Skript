@@ -32,6 +32,7 @@ import ch.njol.skript.lang.TriggerSection;
 import ch.njol.skript.lang.function.FunctionEvent;
 import ch.njol.skript.lang.function.Functions;
 import ch.njol.skript.lang.function.ScriptFunction;
+import ch.njol.skript.lang.util.ContextlessEvent;
 import ch.njol.skript.log.RetainingLogHandler;
 import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.sections.SecLoop;
@@ -39,7 +40,6 @@ import ch.njol.skript.sections.SecWhile;
 import ch.njol.util.Kleenean;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
-import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * @author Peter Güttinger
@@ -87,7 +87,7 @@ public class EffReturn extends Effect {
 		try {
 			v = exprs[0].getConvertedExpression(rt.getC());
 			if (v == null) {
-				log.printErrors("This function is declared to return " + rt.getName().withIndefiniteArticle() + ", but " + exprs[0].toString(TriggerContext.dummy(), false) + " is not of that type.");
+				log.printErrors("This function is declared to return " + rt.getName().withIndefiniteArticle() + ", but " + exprs[0].toString(ContextlessEvent.get(), false) + " is not of that type.");
 				return false;
 			}
 			log.printLog();

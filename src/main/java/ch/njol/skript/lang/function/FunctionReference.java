@@ -215,6 +215,8 @@ public class FunctionReference<T> {
 				Expression<?> e = null;
 				if (parameters[i] instanceof ConvertableExpression)
 					e = ((ConvertableExpression<?>) parameters[i]).getConvertedExpression(p.type.getC());
+				if (parameters[i] instanceof ch.njol.skript.lang.Expression)
+					e = ((ch.njol.skript.lang.Expression<?>) parameters[i]).getConvertedExpression(p.type.getC());
 				if (e == null) {
 					if (first) {
 						if (LiteralUtils.hasUnparsedLiteral(parameters[i])) {

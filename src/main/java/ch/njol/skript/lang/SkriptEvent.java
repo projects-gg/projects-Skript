@@ -25,6 +25,7 @@ import ch.njol.skript.SkriptEventHandler;
 import ch.njol.skript.config.SectionNode;
 import ch.njol.skript.events.EvtClick;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
+import ch.njol.skript.lang.util.ContextlessEvent;
 import org.skriptlang.skript.lang.script.Script;
 import org.skriptlang.skript.lang.entry.EntryContainer;
 import org.skriptlang.skript.lang.structure.Structure;
@@ -205,7 +206,7 @@ public abstract class SkriptEvent extends Structure {
 
 	@Override
 	public String toString() {
-		return toString(TriggerContext.dummy(), false);
+		return toString(ContextlessEvent.get(), false);
 	}
 
 	/**

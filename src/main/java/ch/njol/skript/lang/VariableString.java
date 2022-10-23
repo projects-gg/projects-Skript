@@ -22,6 +22,7 @@ import ch.njol.skript.Skript;
 import ch.njol.skript.classes.Changer.ChangeMode;
 import ch.njol.skript.expressions.ExprColoured;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
+import ch.njol.skript.lang.util.ContextlessEvent;
 import ch.njol.skript.lang.util.ConvertedExpression;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.skript.log.BlockingLogHandler;
@@ -314,7 +315,8 @@ public class VariableString implements ch.njol.skript.lang.Expression<String> {
 				((Expression<?>) string.get(0)).getReturnType() == String.class &&
 				((Expression<?>) string.get(0)).isSingle() &&
 				mode == StringMode.MESSAGE) {
-			String expr = ((Expression<?>) string.get(0)).toString(TriggerContext.dummy(), false);
+			Expression<?> expression = (Expression<?>) string.get(0);
+			String expr = expression.toString(ContextlessEvent.getContext(expression), false);
 			Skript.warning(expr + " is already a text, so you should not put it in one (e.g. " + expr + " instead of " + "\"%" + expr.replace("\"", "\"\"") + "%\")");
 		}
 		return new VariableString(orig, sa, mode);
@@ -529,7 +531,7 @@ public class VariableString implements ch.njol.skript.lang.Expression<String> {
 	
 	@Override
 	public String toString() {
-		return toString(TriggerContext.dummy(), false);
+		return toString(ContextlessEvent.get(), false);
 	}
 	
 	/**

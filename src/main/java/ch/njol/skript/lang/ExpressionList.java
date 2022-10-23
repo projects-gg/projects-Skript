@@ -21,6 +21,7 @@ package ch.njol.skript.lang;
 import ch.njol.skript.classes.Changer.ChangeMode;
 import ch.njol.skript.conditions.CondCompare;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
+import ch.njol.skript.lang.util.ContextlessEvent;
 import ch.njol.skript.lang.util.SimpleLiteral;
 import ch.njol.skript.util.Utils;
 import ch.njol.util.Checker;
@@ -284,7 +285,7 @@ public class ExpressionList<T> extends org.skriptlang.skript.lang.expression.bas
 
 	@Override
 	public String toString() {
-		return toString(TriggerContext.dummy(), false);
+		return toString(ContextlessEvent.get(), false);
 	}
 
 	/**

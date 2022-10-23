@@ -31,6 +31,7 @@ import ch.njol.skript.lang.function.ExprFunctionCall;
 import ch.njol.skript.lang.function.FunctionReference;
 import ch.njol.skript.lang.function.Functions;
 import ch.njol.skript.lang.parser.ParserInstance;
+import ch.njol.skript.lang.util.ContextlessEvent;
 import ch.njol.skript.lang.util.SimpleLiteral;
 import ch.njol.skript.localization.Language;
 import ch.njol.skript.localization.Message;
@@ -51,7 +52,6 @@ import com.google.common.primitives.Booleans;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.eclipse.jdt.annotation.Nullable;
 import org.skriptlang.skript.bukkit.event.BukkitTriggerContext;
-import org.skriptlang.skript.lang.context.TriggerContext;
 import org.skriptlang.skript.lang.converter.ConvertableExpression;
 import org.skriptlang.skript.lang.script.Script;
 import org.skriptlang.skript.lang.script.ScriptWarning;
@@ -377,8 +377,16 @@ public class SkriptParser {
 							return r;
 						}
 					}
+					if (e instanceof ch.njol.skript.lang.Expression) {
+						Class<T>[] objTypes = (Class<T>[]) types; // Java generics... ?
+						final Expression<? extends T> r = ((ch.njol.skript.lang.Expression) e).getConvertedExpression(objTypes);
+						if (r != null) {
+							log.printLog();
+							return r;
+						}
+					}
 					// Print errors, if we couldn't get the correct type
-					log.printError(e.toString(TriggerContext.dummy(), false) + " " + Language.get("is") + " " + notOfType(types), ErrorQuality.NOT_AN_EXPRESSION);
+					log.printError(e.toString(ContextlessEvent.getContext(e), false) + " " + Language.get("is") + " " + notOfType(types), ErrorQuality.NOT_AN_EXPRESSION);
 					return null;
 				}
 				log.clear();
@@ -577,8 +585,15 @@ public class SkriptParser {
 							return r;
 						}
 					}
+					if (e instanceof ch.njol.skript.lang.Expression) {
+						Expression<?> r = ((ch.njol.skript.lang.Expression) e).getConvertedExpression((Class<Object>[]) types);
+						if (r != null) {
+							log.printLog();
+							return r;
+						}
+					}
 					// Print errors, if we couldn't get the correct type
-					log.printError(e.toString(TriggerContext.dummy(), false) + " " + Language.get("is") + " " + notOfType(types), ErrorQuality.NOT_AN_EXPRESSION);
+					log.printError(e.toString(ContextlessEvent.getContext(e), false) + " " + Language.get("is") + " " + notOfType(types), ErrorQuality.NOT_AN_EXPRESSION);
 					return null;
 				}
 				log.clear();

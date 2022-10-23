@@ -37,6 +37,7 @@ import org.skriptlang.skript.bukkit.event.BukkitTriggerContext;
 import org.skriptlang.skript.lang.changer.ChangeableExpression;
 import org.skriptlang.skript.lang.context.TriggerContext;
 import org.skriptlang.skript.lang.converter.ConvertableExpression;
+import org.skriptlang.skript.lang.expression.DefaultExpression;
 import org.skriptlang.skript.lang.expression.ListExpression;
 import org.skriptlang.skript.lang.expression.SimplifiableExpression;
 import org.skriptlang.skript.base.event.eventvalues.TimeSensitiveExpression;
@@ -376,135 +377,186 @@ public interface Expression<T> extends SyntaxElement, Debuggable,
 	// Utility Methods
 	//
 
+	// oh boy...
+	@SuppressWarnings("unchecked")
 	static <T> Expression<T> fromNew(org.skriptlang.skript.lang.expression.Expression<T> expression) {
 		//noinspection ConstantConditions
 		if (expression == null) // Just in case
 			return null;
 		if (expression instanceof Expression)
 			return (Expression<T>) expression;
-		return new Expression<T>() {
-			@Override
-			@Nullable
-			public T getSingle(Event e) {
-				return expression.getSingle(new BukkitTriggerContext(e, e.getEventName()));
-			}
 
-			@Override
-			public T[] getArray(Event e) {
-				return expression.getArray(new BukkitTriggerContext(e, e.getEventName()));
-			}
+		// Some cases require a deeper copy...
+		if (expression instanceof org.skriptlang.skript.lang.expression.base.LiteralList) {
 
-			@Override
-			public T[] getAll(Event e) {
-				return expression.getAll(new BukkitTriggerContext(e, e.getEventName()));
-			}
+			org.skriptlang.skript.lang.expression.base.LiteralList<T> newType =
+				(org.skriptlang.skript.lang.expression.base.LiteralList<T>) expression;
 
-			@Override
-			public boolean isSingle() {
-				return expression.isSingle();
-			}
+			org.skriptlang.skript.lang.expression.Literal<? extends T>[] newLiterals = newType.getExpressions();
+			Literal<T>[] convertedLiterals = (Literal<T>[]) new Literal<?>[newLiterals.length];
+			for (int i = 0; i < newLiterals.length; i++)
+				convertedLiterals[i] = (Literal<T>) fromNew(newLiterals[i]);
 
-			@Override
-			public boolean check(Event e, Checker<? super T> c, boolean negated) {
-				return expression.check(new BukkitTriggerContext(e, e.getEventName()), c, negated);
-			}
+			return new LiteralList<>(convertedLiterals, newType.getReturnType(), newType.getAnd());
 
-			@Override
-			public boolean check(Event e, Checker<? super T> c) {
-				return expression.check(new BukkitTriggerContext(e, e.getEventName()), c);
-			}
+		} else if (expression instanceof org.skriptlang.skript.lang.expression.base.ExpressionList) {
 
-			@Override
-			@Nullable
-			public <R> Expression<? extends R> getConvertedExpression(Class<R>... to) {
-				if (expression instanceof ConvertableExpression) {
-					org.skriptlang.skript.lang.expression.Expression<? extends R> converted = ((ConvertableExpression<T>) expression).getConvertedExpression(to);
-					return converted != null ? fromNew(converted) : null;
+			org.skriptlang.skript.lang.expression.base.ExpressionList<T> newType =
+				(org.skriptlang.skript.lang.expression.base.ExpressionList<T>) expression;
+
+			org.skriptlang.skript.lang.expression.Expression<? extends T>[] newExpressions = newType.getExpressions();
+			Expression<T>[] convertedExpressions = (Expression<T>[]) new Expression<?>[newExpressions.length];
+			for (int i = 0; i < convertedExpressions.length; i++)
+				convertedExpressions[i] = (Expression<T>) fromNew(newExpressions[i]);
+
+			return new ExpressionList<>(convertedExpressions, newType.getReturnType(), newType.getAnd());
+
+		} else if (expression instanceof org.skriptlang.skript.lang.expression.Literal) {
+			// TODO in the future should cover more specific types of literals once added
+
+			org.skriptlang.skript.lang.expression.Literal<T> newType =
+				(org.skriptlang.skript.lang.expression.Literal<T>) expression;
+			return new Literal<T>() {
+				@Override
+				public T[] getArray() {
+					return newType.getArray();
 				}
-				return null;
-			}
 
-			@Override
-			public Class<? extends T> getReturnType() {
-				return expression.getReturnType();
-			}
-
-			@Override
-			public boolean getAnd() {
-				if (expression instanceof ListExpression)
-					return ((ListExpression<T>) expression).getAnd();
-				return false;
-			}
-
-			@Override
-			public boolean setTime(int time) {
-				if (expression instanceof TimeSensitiveExpression) {
-					((TimeSensitiveExpression<T>) expression).setTime(time);
-					return true;
+				@Override
+				public T getSingle() {
+					return newType.getSingle();
 				}
-				return false;
-			}
 
-			@Override
-			public int getTime() {
-				if (expression instanceof TimeSensitiveExpression)
-					return ((TimeSensitiveExpression<T>) expression).getTime();
-				return EventValues.TIME_NOW;
-			}
+				@Override
+				@Nullable
+				public <R> Literal<? extends R> getConvertedExpression(Class<R>... to) {
+					if (newType instanceof ConvertableExpression)
+						//noinspection ConstantConditions
+						return (Literal<? extends R>) fromNew(((ConvertableExpression<T>) newType).getConvertedExpression(to));
+					return null;
+				}
 
-			@Override
-			public boolean isDefault() {
-				return false;
-			}
+				@Override
+				public T[] getAll() {
+					return newType.getAll();
+				}
 
-			@Override
-			@Nullable
-			public Iterator<? extends T> iterator(Event e) {
-				return expression.iterator(new BukkitTriggerContext(e, e.getEventName()));
-			}
+				@Override
+				@Nullable
+				public T getSingle(Event e) {
+					return getSingle();
+				}
 
-			@Override
-			public boolean isLoopOf(String s) {
-				return false;
-			}
+				@Override
+				public T[] getArray(Event e) {
+					return getArray();
+				}
 
-			@Override
-			public Expression<?> getSource() {
-				return fromNew(expression.getSource());
-			}
+				@Override
+				public T[] getAll(Event e) {
+					return getAll();
+				}
 
-			@Override
-			public Expression<? extends T> simplify() {
-				if (expression instanceof SimplifiableExpression)
-					return fromNew(((SimplifiableExpression<T>) expression).simplify());
-				return this;
-			}
+				@Override
+				public boolean isSingle() {
+					return newType.isSingle();
+				}
 
-			@Override
-			@Nullable
-			@SuppressWarnings("ConstantConditions") // old implementation has bad annotations
-			public Class<?>[] acceptChange(ChangeMode mode) {
-				if (expression instanceof ChangeableExpression)
-					return ((ChangeableExpression<T>) expression).acceptChange(mode);
-				return null;
-			}
+				@Override
+				public boolean check(Event e, Checker<? super T> c, boolean negated) {
+					return newType.check(new BukkitTriggerContext(e, e.getEventName()), c, negated);
+				}
 
-			@Override
-			public void change(Event e, @Nullable Object[] delta, ChangeMode mode) {
-				if (expression instanceof ChangeableExpression)
-					((ChangeableExpression<T>) expression).change(new BukkitTriggerContext(e, e.getEventName()), delta, mode);
-			}
+				@Override
+				public boolean check(Event e, Checker<? super T> c) {
+					return newType.check(new BukkitTriggerContext(e, e.getEventName()), c);
+				}
 
-			@Override
-			public String toString(@Nullable Event e, boolean debug) {
-				return expression.toString(e != null ? new BukkitTriggerContext(e, e.getEventName()) : TriggerContext.dummy(), debug);
-			}
+				@Override
+				public Class<? extends T> getReturnType() {
+					return newType.getReturnType();
+				}
 
-			@Override
-			public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-				return expression.init(exprs, matchedPattern, isDelayed, parseResult);
-			}
-		};
+				@Override
+				public boolean getAnd() {
+					if (newType instanceof ListExpression)
+						return ((ListExpression<T>) newType).getAnd();
+					return true; // Default state I suppose
+				}
+
+				@Override
+				public boolean setTime(int time) {
+					if (newType instanceof TimeSensitiveExpression) {
+						((TimeSensitiveExpression<T>) newType).setTime(time);
+						return true;
+					}
+					return false;
+				}
+
+				@Override
+				public int getTime() {
+					if (newType instanceof TimeSensitiveExpression)
+						return ((TimeSensitiveExpression<T>) newType).getTime();
+					return EventValues.TIME_NOW;
+				}
+
+				@Override
+				public boolean isDefault() {
+					return newType instanceof DefaultExpression;
+				}
+
+				@Override
+				@Nullable
+				public Iterator<? extends T> iterator(Event e) {
+					return newType.iterator(new BukkitTriggerContext(e, e.getEventName()));
+				}
+
+				@Override
+				public boolean isLoopOf(String s) {
+					return false;
+				}
+
+				@Override
+				public Expression<?> getSource() {
+					return fromNew(newType.getSource());
+				}
+
+				@Override
+				public Expression<? extends T> simplify() {
+					if (newType instanceof SimplifiableExpression)
+						return fromNew(((SimplifiableExpression<T>) newType).simplify());
+					return this;
+				}
+
+				@Override
+				@Nullable
+				public Class<?>[] acceptChange(ChangeMode mode) {
+					if (newType instanceof ChangeableExpression)
+						//noinspection ConstantConditions
+						return ((ChangeableExpression<T>) newType).acceptChange(mode);
+					return new Class[0];
+				}
+
+				@Override
+				public void change(Event e, @Nullable Object[] delta, ChangeMode mode) {
+					if (newType instanceof ChangeableExpression)
+						((ChangeableExpression<T>) newType).change(new BukkitTriggerContext(e, e.getEventName()), delta, mode);
+				}
+
+				@Override
+				public String toString(@Nullable Event e, boolean debug) {
+					return newType.toString(e != null ? new BukkitTriggerContext(e, e.getEventName()) : TriggerContext.dummy(), debug);
+				}
+
+				@Override
+				public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
+					return newType.init(exprs, matchedPattern, isDelayed, parseResult);
+				}
+			};
+
+		}
+
+		throw new IllegalArgumentException("Unable to handle new expression of type: " + expression.getClass());
 	}
 	
 }

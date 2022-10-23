@@ -51,7 +51,6 @@ import ch.njol.util.coll.CollectionUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
-import org.skriptlang.skript.lang.context.TriggerContext;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -928,7 +927,7 @@ public class ScriptLoader {
 				}
 
 				if (Skript.debug() || subNode.debug())
-					Skript.debug(SkriptColor.replaceColorChar(parser.getIndentation() + stmt.toString(TriggerContext.dummy(), true)));
+					Skript.debug(SkriptColor.replaceColorChar(parser.getIndentation() + stmt.toString(ContextlessEvent.get(), true)));
 
 				items.add(stmt);
 			} else if (subNode instanceof SectionNode) {
@@ -939,7 +938,7 @@ public class ScriptLoader {
 					continue;
 
 				if (Skript.debug() || subNode.debug())
-					Skript.debug(SkriptColor.replaceColorChar(parser.getIndentation() + section.toString(TriggerContext.dummy(), true)));
+					Skript.debug(SkriptColor.replaceColorChar(parser.getIndentation() + section.toString(ContextlessEvent.get(), true)));
 
 				items.add(section);
 

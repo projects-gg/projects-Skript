@@ -76,4 +76,9 @@ public class LiteralList<Type> extends ExpressionList<Type> implements Literal<T
 		return new LiteralList<>(literals, (Class<NewType>) Utils.getSuperType(classes), getAnd(), this);
 	}
 
+	@Override
+	public LiteralList<?> getSource() {
+		return (LiteralList<?>) super.getSource();
+	}
+
 }

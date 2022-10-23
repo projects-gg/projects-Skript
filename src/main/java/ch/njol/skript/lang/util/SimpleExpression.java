@@ -38,8 +38,6 @@ import ch.njol.util.Checker;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
 import ch.njol.util.coll.iterator.ArrayIterator;
-import org.skriptlang.skript.lang.context.TriggerContext;
-import org.skriptlang.skript.lang.expression.SimplifiableExpression;
 
 /**
  * An implementation of the {@link Expression} interface. You should usually extend this class to make a new expression.
@@ -47,7 +45,7 @@ import org.skriptlang.skript.lang.expression.SimplifiableExpression;
  * @see Skript#registerExpression(Class, Class, ExpressionType, String...)
  * @author Peter Güttinger
  */
-public abstract class SimpleExpression<T> implements Expression<T>, SimplifiableExpression<T> {
+public abstract class SimpleExpression<T> implements Expression<T> {
 	
 	private int time = 0;
 	
@@ -324,7 +322,7 @@ public abstract class SimpleExpression<T> implements Expression<T>, Simplifiable
 	
 	@Override
 	public String toString() {
-		return toString(TriggerContext.dummy(), false);
+		return toString(ContextlessEvent.get(), false);
 	}
 	
 	@Override

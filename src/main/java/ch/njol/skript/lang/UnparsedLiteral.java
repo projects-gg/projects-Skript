@@ -20,6 +20,7 @@ package ch.njol.skript.lang;
 
 import java.util.logging.Level;
 
+import ch.njol.skript.lang.util.ContextlessEvent;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -35,7 +36,6 @@ import ch.njol.util.Checker;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
 import ch.njol.util.coll.iterator.NonNullIterator;
-import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * A literal which has yet to be parsed. This is returned if %object(s)% is used within patterns and no expression matches.
@@ -246,7 +246,7 @@ public class UnparsedLiteral implements Literal<Object> {
 	
 	@Override
 	public String toString() {
-		return toString(TriggerContext.dummy(), false);
+		return toString(ContextlessEvent.get(), false);
 	}
 	
 	@Override

@@ -22,6 +22,9 @@ import ch.njol.skript.lang.parser.ParserInstance;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
+import org.skriptlang.skript.bukkit.event.BukkitTriggerContext;
+import org.skriptlang.skript.lang.context.TriggerContext;
+import org.skriptlang.skript.lang.expression.Expression;
 
 /**
  * This class is intended for usage in places of Skript that require an Event.
@@ -50,6 +53,14 @@ public final class ContextlessEvent extends Event {
 	@NotNull
 	public HandlerList getHandlers() {
 		throw new IllegalStateException();
+	}
+
+	public static TriggerContext getContext(Expression<?> expression) {
+		if (expression instanceof ch.njol.skript.lang.Expression) {
+			ContextlessEvent contextlessEvent = get();
+			return new BukkitTriggerContext(contextlessEvent, contextlessEvent.getEventName());
+		}
+		return TriggerContext.dummy();
 	}
 
 }

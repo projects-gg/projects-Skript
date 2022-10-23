@@ -21,6 +21,7 @@ package ch.njol.skript.effects;
 import java.util.Arrays;
 import java.util.logging.Level;
 
+import ch.njol.skript.lang.util.ContextlessEvent;
 import org.skriptlang.skript.lang.script.Script;
 import org.skriptlang.skript.lang.script.ScriptWarning;
 import org.bukkit.event.Event;
@@ -48,7 +49,6 @@ import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.Patterns;
 import ch.njol.skript.util.Utils;
 import ch.njol.util.Kleenean;
-import org.skriptlang.skript.lang.context.TriggerContext;
 
 /**
  * @author Peter Güttinger
@@ -157,7 +157,7 @@ public class EffChange extends Effect {
 			rs = changed.acceptChange(mode);
 			ClassInfo<?> c = Classes.getSuperClassInfo(changed.getReturnType());
 			Changer<?> changer = c.getChanger();
-			what = changer == null || !Arrays.equals(changer.acceptChange(mode), rs) ? changed.toString(TriggerContext.dummy(), false) : c.getName().withIndefiniteArticle();
+			what = changer == null || !Arrays.equals(changer.acceptChange(mode), rs) ? changed.toString(ContextlessEvent.get(), false) : c.getName().withIndefiniteArticle();
 		} finally {
 			h.stop();
 		}

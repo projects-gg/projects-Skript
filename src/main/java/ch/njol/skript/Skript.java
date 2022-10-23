@@ -43,6 +43,7 @@ import ch.njol.skript.lang.Statement;
 import ch.njol.skript.lang.SyntaxElementInfo;
 import ch.njol.skript.lang.Trigger;
 import ch.njol.skript.lang.TriggerItem;
+import ch.njol.skript.lang.util.ContextlessEvent;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.skript.localization.Language;
 import ch.njol.skript.localization.Message;
@@ -105,7 +106,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.eclipse.jdt.annotation.Nullable;
-import org.skriptlang.skript.lang.context.TriggerContext;
 import org.skriptlang.skript.lang.entry.EntryValidator;
 import org.skriptlang.skript.lang.expression.Expression;
 import org.skriptlang.skript.lang.expression.ExpressionInfo;
@@ -1788,11 +1788,11 @@ public final class Skript extends JavaPlugin implements Listener {
 		logEx("Server platform: " + serverPlatform.name + (serverPlatform.supported ? "" : " (unsupported)"));
 		logEx();
 		logEx("Current node: " + SkriptLogger.getNode());
-		logEx("Current item: " + (item == null ? "null" : item.toString(TriggerContext.dummy(), true)));
+		logEx("Current item: " + (item == null ? "null" : item.toString(ContextlessEvent.get(), true)));
 		if (item != null && item.getTrigger() != null) {
 			Trigger trigger = item.getTrigger();
 			Script script = trigger.getScript();
-			logEx("Current trigger: " + trigger.toString(TriggerContext.dummy(), true) + " (" + (script == null ? "null" : script.getConfig().getFileName()) + ", line " + trigger.getLineNumber() + ")");
+			logEx("Current trigger: " + trigger.toString(ContextlessEvent.get(), true) + " (" + (script == null ? "null" : script.getConfig().getFileName()) + ", line " + trigger.getLineNumber() + ")");
 		}
 		logEx();
 		logEx("Thread: " + (thread == null ? Thread.currentThread() : thread).getName());

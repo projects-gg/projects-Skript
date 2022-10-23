@@ -29,11 +29,11 @@ import ch.njol.skript.lang.ExpressionType;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.Variable;
+import ch.njol.skript.lang.util.ContextlessEvent;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.util.Kleenean;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
-import org.skriptlang.skript.lang.context.TriggerContext;
 
 import java.util.Map;
 
@@ -83,11 +83,11 @@ public class ExprAmount extends SimpleExpression<Long> {
 				return false;
 			}
 			if (expr.isSingle()) {
-				Skript.error("'" + expr.toString(TriggerContext.dummy(), false) + "' can only ever have one value at most, thus the 'amount of ...' expression is useless. Use '... exists' instead to find out whether the expression has a value.");
+				Skript.error("'" + expr.toString(ContextlessEvent.get(), false) + "' can only ever have one value at most, thus the 'amount of ...' expression is useless. Use '... exists' instead to find out whether the expression has a value.");
 				return false;
 			}
 			if (recursive && !(expr instanceof Variable<?>)) {
-				Skript.error("Getting the recursive size of a list only applies to variables, thus the '" + expr.toString(TriggerContext.dummy(), false) + "' expression is useless.");
+				Skript.error("Getting the recursive size of a list only applies to variables, thus the '" + expr.toString(ContextlessEvent.get(), false) + "' expression is useless.");
 				return false;
 			}
 		}
