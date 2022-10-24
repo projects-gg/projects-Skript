@@ -106,7 +106,7 @@ a:visited {
     grid-column-end: 1;
     position: sticky;
     top: 60px;
-	padding-top: 60px;
+    padding-top: 60px;
     height: max-content;
 }
 
