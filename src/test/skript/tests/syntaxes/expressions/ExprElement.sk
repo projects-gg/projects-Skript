@@ -1,0 +1,15 @@
+test "first element":
+	set {_list::*} to "foo", "bar" and "foobar"
+	assert first element of {_list::*} is "foo" with "Incorrect first element"
+
+test "last element":
+	set {_list::*} to "foo", "bar" and "foobar"
+	assert last element of {_list::*} is "foobar" with "Incorrect last element"
+
+test "ordinal element":
+	set {_list::*} to "foo", "bar" and "foobar"
+	assert 2nd element of {_list::*} is "bar" with "Incorrect 2nd element"
+
+test "random element":
+	set {_list::*} to "foo", "bar" and "foobar"
+	assert {_list::*} contains (random element of {_list::*}) with "Incorrect random element"

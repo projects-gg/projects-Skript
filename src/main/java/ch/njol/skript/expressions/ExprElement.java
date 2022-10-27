@@ -32,10 +32,12 @@ import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.Kleenean;
 import ch.njol.util.StringUtils;
 import ch.njol.util.coll.CollectionUtils;
+import com.google.common.collect.Iterators;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
 import java.lang.reflect.Array;
+import java.util.Iterator;
 
 @Name("Element of")
 @Description({"The first, last or a random element of a set, e.g. a list variable.",
@@ -45,10 +47,14 @@ import java.lang.reflect.Array;
 public class ExprElement extends SimpleExpression<Object> {
 
 	static {
-		Skript.registerExpression(ExprElement.class, Object.class, ExpressionType.PROPERTY, "(-1¦[the] first|1¦[the] last|0¦[a] random|2¦%-number%(st|nd|rd|th)) element [out] of %objects%");
+		Skript.registerExpression(ExprElement.class, Object.class, ExpressionType.PROPERTY, "(0¦[the] first|1¦[the] last|2¦[a] random|3¦%-number%(st|nd|rd|th)) element [out] of %objects%");
 	}
 
-	private int element;
+	private enum ElementType {
+		FIRST, LAST, RANDOM, ORDINAL
+	}
+
+	private ElementType type;
 
 	private Expression<?> expr;
 
@@ -60,28 +66,38 @@ public class ExprElement extends SimpleExpression<Object> {
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
 		expr = LiteralUtils.defendExpression(exprs[1]);
 		number = (Expression<Number>) exprs[0];
-		element = parseResult.mark;
+		type = ElementType.values()[parseResult.mark];
 		return LiteralUtils.canInitSafely(expr);
 	}
 
 	@Override
 	@Nullable
 	protected Object[] get(Event e) {
-		Object[] os = expr.getArray(e);
-		if (os.length == 0)
+		Iterator<?> iter = expr.iterator(e);
+		if (iter == null || !iter.hasNext())
 			return null;
-		Object o;
-		if (element == -1) {
-			o = os[0];
-		} else if (element == 1) {
-			o = os[os.length - 1];
-		} else if (element == 2) {
-			Number number = this.number.getSingle(e);
-			if (number == null || number.intValue() - 1 >= os.length || number.intValue() - 1 < 0)
-				return null;
-			o = os[number.intValue() - 1];
-		} else {
-			o = CollectionUtils.getRandom(os);
+		Object o = null;
+		switch (type) {
+			case FIRST:
+				o = iter.next();
+				break;
+			case LAST:
+				o = Iterators.getLast(iter);
+				break;
+			case ORDINAL:
+				assert this.number != null;
+				Number number = this.number.getSingle(e);
+				if (number == null)
+					return null;
+				try {
+					o = Iterators.get(iter, number.intValue() - 1);
+				} catch (IndexOutOfBoundsException exception) {
+					return null;
+				}
+				break;
+			case RANDOM:
+				Object[] allIterValues = Iterators.toArray(iter, Object.class);
+				o = CollectionUtils.getRandom(allIterValues);
 		}
 		Object[] r = (Object[]) Array.newInstance(getReturnType(), 1);
 		r[0] = o;
@@ -97,7 +113,7 @@ public class ExprElement extends SimpleExpression<Object> {
 			return null;
 
 		ExprElement exprElement = new ExprElement();
-		exprElement.element = this.element;
+		exprElement.type = this.type;
 		exprElement.expr = convExpr;
 		exprElement.number = this.number;
 		return (Expression<? extends R>) exprElement;
@@ -116,17 +132,17 @@ public class ExprElement extends SimpleExpression<Object> {
 	@Override
 	public String toString(@Nullable Event e, boolean debug) {
 		String prefix;
-		switch (element) {
-			case -1:
+		switch (type) {
+			case FIRST:
 				prefix = "the first";
 				break;
-			case 1:
+			case LAST:
 				prefix = "the last";
 				break;
-			case 0:
+			case RANDOM:
 				prefix = "a random";
 				break;
-			case 2:
+			case ORDINAL:
 				assert number != null;
 				prefix = "the ";
 				// Proper ordinal number
