@@ -16,25 +16,34 @@
  *
  * Copyright Peter Güttinger, SkriptLang team and contributors
  */
-package ch.njol.skript.bukkitutil.block;
+package ch.njol.skript.conditions;
 
-import ch.njol.skript.aliases.MatchQuality;
-import ch.njol.yggdrasil.YggdrasilSerializable.YggdrasilExtendedSerializable;
-import org.eclipse.jdt.annotation.Nullable;
+import ch.njol.skript.doc.Description;
+import ch.njol.skript.doc.Examples;
+import ch.njol.skript.doc.Name;
+import ch.njol.skript.doc.Since;
+import org.bukkit.entity.LivingEntity;
 
-/**
- * Contains all data block has that is needed for comparisions.
- */
-public abstract class BlockValues implements YggdrasilExtendedSerializable {
-	
-	public abstract boolean isDefault();
-	
-	public abstract MatchQuality match(BlockValues other);
-	
+import ch.njol.skript.conditions.base.PropertyCondition;
+
+@Name("Is Gliding")
+@Description("Checks whether a living entity is gliding.")
+@Examples("if player is gliding")
+@Since("INSERT VERSION")
+public class CondIsGliding extends PropertyCondition<LivingEntity> {
+
+	static {
+		register(CondIsGliding.class, "gliding", "livingentities");
+	}
+
 	@Override
-	public abstract boolean equals(@Nullable Object other);
-	
+	public boolean check(LivingEntity entity) {
+		return entity.isGliding();
+	}
+
 	@Override
-	public abstract int hashCode();
-	
+	protected String getPropertyName() {
+		return "gliding";
+	}
+
 }
