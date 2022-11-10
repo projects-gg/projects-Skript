@@ -42,6 +42,7 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -92,8 +93,12 @@ public class ExprFilter extends SimpleExpression<Object> {
 	@NonNull
 	@Override
 	public Iterator<?> iterator(Event e) {
+		Iterator<?> objIterator = this.objects.iterator(e);
+		if (objIterator == null) {
+			return Collections.emptyIterator();
+		}
 		try {
-			return Iterators.filter(new ArrayIterator<>(this.objects.getArray(e)), object -> {
+			return Iterators.filter(objIterator, object -> {
 				current = object;
 				return condition.check(e);
 			});
