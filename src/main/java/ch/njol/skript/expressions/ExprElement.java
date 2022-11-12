@@ -43,15 +43,15 @@ import java.util.Iterator;
 @Description({"The first, last or a random element of a set, e.g. a list variable.",
 		"See also: <a href='#ExprRandom'>random</a>"})
 @Examples("give a random element out of {free items::*} to the player")
-@Since("2.0")
+@Since("2.0, INSERT VERSION (relative to last element)")
 public class ExprElement extends SimpleExpression<Object> {
 
 	static {
-		Skript.registerExpression(ExprElement.class, Object.class, ExpressionType.PROPERTY, "(0:[the] first|1¦[the] last|2:[a] random|3:%-number%(st|nd|rd|th)) element [out] of %objects%");
+		Skript.registerExpression(ExprElement.class, Object.class, ExpressionType.PROPERTY, "(0:[the] first|1:[the] last|2:[a] random|3:[the] %-number%(st|nd|rd|th)|4:[the] %-number%(st|nd|rd|th) last) element [out] of %objects%");
 	}
 
 	private enum ElementType {
-		FIRST, LAST, RANDOM, ORDINAL
+		FIRST, LAST, RANDOM, ORDINAL, TAIL_END_ORDINAL
 	}
 
 	private ElementType type;
@@ -64,44 +64,56 @@ public class ExprElement extends SimpleExpression<Object> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-		expr = LiteralUtils.defendExpression(exprs[1]);
-		number = (Expression<Number>) exprs[0];
+		expr = LiteralUtils.defendExpression(exprs[2]);
 		type = ElementType.values()[parseResult.mark];
+		number = (Expression<Number>) (type == ElementType.ORDINAL ? exprs[0]: exprs[1]);
 		return LiteralUtils.canInitSafely(expr);
 	}
 
 	@Override
 	@Nullable
-	protected Object[] get(Event e) {
-		Iterator<?> iter = expr.iterator(e);
+	protected Object[] get(Event event) {
+		Iterator<?> iter = expr.iterator(event);
 		if (iter == null || !iter.hasNext())
 			return null;
-		Object o = null;
+		Object element = null;
 		switch (type) {
 			case FIRST:
-				o = iter.next();
+				element = iter.next();
 				break;
 			case LAST:
-				o = Iterators.getLast(iter);
+				element = Iterators.getLast(iter);
 				break;
 			case ORDINAL:
 				assert this.number != null;
-				Number number = this.number.getSingle(e);
+				Number number = this.number.getSingle(event);
 				if (number == null)
 					return null;
 				try {
-					o = Iterators.get(iter, number.intValue() - 1);
+					element = Iterators.get(iter, number.intValue() - 1);
 				} catch (IndexOutOfBoundsException exception) {
 					return null;
 				}
 				break;
 			case RANDOM:
 				Object[] allIterValues = Iterators.toArray(iter, Object.class);
-				o = CollectionUtils.getRandom(allIterValues);
+				element = CollectionUtils.getRandom(allIterValues);
+				break;
+			case TAIL_END_ORDINAL:
+				allIterValues = Iterators.toArray(iter, Object.class);
+				assert this.number != null;
+				number = this.number.getSingle(event);
+				if (number == null)
+					return null;
+				int ordinal = number.intValue();
+				if (ordinal <= 0 || ordinal > allIterValues.length)
+					return null;
+				element = allIterValues[allIterValues.length - ordinal];
+				break;
 		}
-		Object[] r = (Object[]) Array.newInstance(getReturnType(), 1);
-		r[0] = o;
-		return r;
+		Object[] elementArray = (Object[]) Array.newInstance(getReturnType(), 1);
+		elementArray[0] = element;
+		return elementArray;
 	}
 
 	@Override
