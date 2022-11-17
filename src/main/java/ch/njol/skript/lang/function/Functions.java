@@ -240,7 +240,7 @@ public abstract class Functions {
 	/**
 	 * Gets a function, if it exists. Note that even if function exists in scripts,
 	 * it might not have been parsed yet. If you want to check for existence,
-	 * then use {@link #getSignature(String, String)}.
+	 * then use {@link #getGlobalSignature(String)}.
 	 *
 	 * @param name Name of function.
 	 * @return Function, or null if it does not exist.
@@ -256,7 +256,7 @@ public abstract class Functions {
 	/**
 	 * Gets a function, if it exists. Note that even if function exists in scripts,
 	 * it might not have been parsed yet. If you want to check for existence,
-	 * then use {@link #getSignature(String, String)}.
+	 * then use {@link #getLocalSignature(String, String)}.
 	 *
 	 * @param name Name of function.
 	 * @param script The script where the function is declared in. Used to get local functions.
