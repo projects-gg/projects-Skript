@@ -283,7 +283,7 @@ public abstract class Functions {
 	 */
 	@Deprecated
 	@Nullable
-	public static Signature<?> getsSignature(String name) {
+	public static Signature<?> getSignature(String name) {
 		return getGlobalSignature(name);
 	}
 
