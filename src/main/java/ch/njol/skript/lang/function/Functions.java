@@ -225,7 +225,7 @@ public abstract class Functions {
 	/**
 	 * Gets a function, if it exists. Note that even if function exists in scripts,
 	 * it might not have been parsed yet. If you want to check for existence,
-	 * then use {@link #getSignature(String, String)}.
+	 * then use {@link #getGlobalSignature(String)}.
 	 *
 	 * @deprecated in favour of {@link #getGlobalFunction(String)} for proper name.
 	 * @param name Name of function.
