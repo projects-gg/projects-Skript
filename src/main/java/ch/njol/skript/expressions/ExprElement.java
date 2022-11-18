@@ -47,7 +47,7 @@ import java.util.Iterator;
 public class ExprElement extends SimpleExpression<Object> {
 
 	static {
-		Skript.registerExpression(ExprElement.class, Object.class, ExpressionType.PROPERTY, "(0:[the] first|1:[the] last|2:[a] random|3:[the] %-number%(st|nd|rd|th)|4:[the] %-number%(st|nd|rd|th) last) element [out] of %objects%");
+		Skript.registerExpression(ExprElement.class, Object.class, ExpressionType.PROPERTY, "(0:[the] first|1:[the] last|2:[a] random|3:[the] %-number%(st|nd|rd|th)|4:[the] %-number%(st|nd|rd|th) [to] last) element [out] of %objects%");
 	}
 
 	private enum ElementType {
