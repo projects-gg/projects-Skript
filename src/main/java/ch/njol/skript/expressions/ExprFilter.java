@@ -94,9 +94,8 @@ public class ExprFilter extends SimpleExpression<Object> {
 	@Override
 	public Iterator<?> iterator(Event event) {
 		Iterator<?> objIterator = this.objects.iterator(event);
-		if (objIterator == null) {
+		if (objIterator == null)
 			return Collections.emptyIterator();
-		}
 		try {
 			return Iterators.filter(objIterator, object -> {
 				current = object;
