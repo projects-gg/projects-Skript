@@ -61,7 +61,9 @@ public class ExprSpectatorTarget extends SimpleExpression<Entity> {
 
 	static {
 		Skript.registerExpression(ExprSpectatorTarget.class, Entity.class, ExpressionType.PROPERTY,
-				"spectator target [of %-players%]", "%players%'[s] spectator target");
+				"spectator target [of %-players%]",
+				"%players%'[s] spectator target"
+		);
 	}
 
 	private Expression<Player> players;
