@@ -99,7 +99,7 @@ public class PaperEntityUtils {
 			if (entity instanceof Player) {
 				Player player = (Player) entity;
 				if (target instanceof Vector) {
-					Vector vector = ((Vector)target);
+					Vector vector = (Vector) target;
 					player.lookAt(vector.getX(), vector.getY(), vector.getZ(), LookAnchor.EYES);
 					player.lookAt(vector.getX(), vector.getY(), vector.getZ(), LookAnchor.FEET);
 				} else if (target instanceof Location) {
