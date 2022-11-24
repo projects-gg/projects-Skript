@@ -1837,5 +1837,4 @@ public class BukkitClasses {
 				})
 				.serializer(new EnumSerializer<>(Attribute.class)));
 	}
-
 }
