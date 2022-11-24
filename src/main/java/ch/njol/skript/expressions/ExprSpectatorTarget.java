@@ -161,7 +161,7 @@ public class ExprSpectatorTarget extends SimpleExpression<Entity> {
 
 	@Override
 	public String toString(@Nullable Event event, boolean debug) {
-		return "spectator target" + players != null ? " of " + players.toString(event, debug) : "";
+		return "spectator target" + (players != null ? " of " + players.toString(event, debug) : "");
 	}
 
 	@Override
