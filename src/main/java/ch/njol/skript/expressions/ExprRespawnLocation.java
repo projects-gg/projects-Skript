@@ -23,7 +23,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.eclipse.jdt.annotation.Nullable;
 
-import ch.njol.skript.ScriptLoader;
 import ch.njol.skript.Skript;
 import ch.njol.skript.classes.Changer;
 import ch.njol.skript.classes.Changer.ChangeMode;
@@ -52,7 +51,7 @@ public class ExprRespawnLocation extends SimpleExpression<Location> {
 	
 	@Override
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-		if (!ScriptLoader.isCurrentEvent(PlayerRespawnEvent.class)) {
+		if (!getParser().isCurrentEvent(PlayerRespawnEvent.class)) {
 			Skript.error("The expression 'respawn location' may only be used in the respawn event", ErrorQuality.SEMANTIC_ERROR);
 			return false;
 		}
@@ -62,6 +61,9 @@ public class ExprRespawnLocation extends SimpleExpression<Location> {
 	@Override
 	@Nullable
 	protected Location[] get(Event event) {
+		if (!(event instanceof PlayerRespawnEvent))
+			return null;
+
 		return CollectionUtils.array(((PlayerRespawnEvent)event).getRespawnLocation());
 	}
 
@@ -90,6 +92,9 @@ public class ExprRespawnLocation extends SimpleExpression<Location> {
 
 	@Override
 	public void change(Event event, @Nullable Object[] delta, Changer.ChangeMode mode) {
+		if (!(event instanceof PlayerRespawnEvent))
+			return;
+
 		if (delta != null) ((PlayerRespawnEvent)event).setRespawnLocation((Location)delta[0]);
 	}
 	

@@ -18,16 +18,6 @@
  */
 package ch.njol.skript.expressions;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.regex.Pattern;
-
-import org.bukkit.event.Event;
-import org.eclipse.jdt.annotation.NonNull;
-
-import com.google.common.collect.Iterators;
 import ch.njol.skript.Skript;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.doc.Description;
@@ -45,6 +35,16 @@ import ch.njol.skript.util.LiteralUtils;
 import ch.njol.skript.util.Utils;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.iterator.ArrayIterator;
+import com.google.common.collect.Iterators;
+import org.bukkit.event.Event;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.regex.Pattern;
 
 @Name("Filter")
 @Description("Filters a list based on a condition. " +
@@ -55,6 +55,7 @@ import ch.njol.util.coll.iterator.ArrayIterator;
 @SuppressWarnings({"null", "unchecked"})
 public class ExprFilter extends SimpleExpression<Object> {
 
+	@Nullable
 	private static ExprFilter parsing;
 
 	static {
@@ -68,6 +69,7 @@ public class ExprFilter extends SimpleExpression<Object> {
 	private String rawCond;
 	private Expression<Object> objects;
 
+	@Nullable
 	public static ExprFilter getParsing() {
 		return parsing;
 	}
@@ -77,6 +79,8 @@ public class ExprFilter extends SimpleExpression<Object> {
 		try {
 			parsing = this;
 			objects = LiteralUtils.defendExpression(exprs[0]);
+			if (objects.isSingle())
+				return false;
 			rawCond = parseResult.regexes.get(0).group();
 			condition = Condition.parse(rawCond, "Can't understand this condition: " + rawCond);
 		} finally {
@@ -163,16 +167,20 @@ public class ExprFilter extends SimpleExpression<Object> {
 			);
 		}
 
-		private ExprInput<?> source;
-		private Class<T> superType;
+		@Nullable
+		private final ExprInput<?> source;
+		private final Class<? extends T>[] types;
+		private final Class<T> superType;
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		private ExprFilter parent;
+		@Nullable
 		private ClassInfo<?> inputType;
 
-	public ExprInput() {
+		public ExprInput() {
 			this(null, (Class<? extends T>) Object.class);
 		}
 
-		public ExprInput(ExprInput<?> source, Class<? extends T>... types) {
+		public ExprInput(@Nullable ExprInput<?> source, Class<? extends T>... types) {
 			this.source = source;
 			if (source != null) {
 				this.parent = source.parent;
@@ -181,6 +189,7 @@ public class ExprFilter extends SimpleExpression<Object> {
 				parent.addChild(this);
 			}
 
+			this.types = types;
 			this.superType = (Class<T>) Utils.getSuperType(types);
 		}
 
@@ -204,7 +213,7 @@ public class ExprFilter extends SimpleExpression<Object> {
 			}
 
 			try {
-				return Converters.convertStrictly(new Object[]{current}, superType);
+				return Converters.convertArray(new Object[]{current}, types, superType);
 			} catch (ClassCastException e1) {
 				return (T[]) Array.newInstance(superType, 0);
 			}
@@ -229,6 +238,7 @@ public class ExprFilter extends SimpleExpression<Object> {
 			return superType;
 		}
 
+		@Nullable
 		private ClassInfo<?> getClassInfo() {
 			return inputType;
 		}

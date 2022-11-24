@@ -18,6 +18,29 @@
  */
 package ch.njol.skript.aliases;
 
+import ch.njol.skript.Skript;
+import ch.njol.skript.SkriptAddon;
+import ch.njol.skript.SkriptConfig;
+import ch.njol.skript.config.Config;
+import ch.njol.skript.config.Node;
+import ch.njol.skript.config.SectionNode;
+import ch.njol.skript.entity.EntityData;
+import org.skriptlang.skript.lang.script.Script;
+import ch.njol.skript.lang.parser.ParserInstance;
+import ch.njol.skript.localization.ArgsMessage;
+import ch.njol.skript.localization.Language;
+import ch.njol.skript.localization.Message;
+import ch.njol.skript.localization.Noun;
+import ch.njol.skript.localization.RegexMessage;
+import ch.njol.skript.log.BlockingLogHandler;
+import ch.njol.skript.util.EnchantmentType;
+import ch.njol.skript.util.Utils;
+import ch.njol.skript.util.Version;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.eclipse.jdt.annotation.Nullable;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -28,46 +51,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.bukkit.Material;
-import org.eclipse.jdt.annotation.Nullable;
-
-import ch.njol.skript.Skript;
-import ch.njol.skript.SkriptAddon;
-import ch.njol.skript.SkriptConfig;
-import ch.njol.skript.config.Config;
-import ch.njol.skript.config.Node;
-import ch.njol.skript.config.SectionNode;
-import ch.njol.skript.entity.EntityData;
-import ch.njol.skript.localization.ArgsMessage;
-import ch.njol.skript.localization.Language;
-import ch.njol.skript.localization.Message;
-import ch.njol.skript.localization.Noun;
-import ch.njol.skript.localization.RegexMessage;
-import ch.njol.skript.log.BlockingLogHandler;
-import ch.njol.skript.log.SkriptLogger;
-import ch.njol.skript.util.EnchantmentType;
-import ch.njol.skript.util.Utils;
-import ch.njol.skript.util.Version;
 
 public abstract class Aliases {
 
 	private static final AliasesProvider provider = createProvider(10000, null);
 	private static final AliasesParser parser = createParser(provider);
 	
-	/**
-	 * Current script aliases.
-	 */
-	@Nullable
-	private static ScriptAliases scriptAliases;
-	
 	@Nullable
 	private static ItemType getAlias_i(final String s) {
 		// Check script aliases first
-		ScriptAliases aliases = scriptAliases;
+		ScriptAliases aliases = getScriptAliases();
 		if (aliases != null) {
 			return aliases.provider.getAlias(s); // Delegates to global provider if needed
 		}
@@ -175,7 +172,7 @@ public abstract class Aliases {
 	@Nullable
 	private static MaterialName getMaterialNameData(ItemData type) {
 		// Check script aliases first
-		ScriptAliases aliases = scriptAliases;
+		ScriptAliases aliases = getScriptAliases();
 		if (aliases != null) {
 			return aliases.provider.getMaterialName(type);
 		}
@@ -193,7 +190,7 @@ public abstract class Aliases {
 	}
 	
 	/**
-	 * @return The ietm's gender or -1 if no name is found
+	 * @return The item's gender or -1 if no name is found
 	 */
 	public static int getGender(ItemData item) {
 		MaterialName n = getMaterialNameData(item);
@@ -267,23 +264,20 @@ public abstract class Aliases {
 				t.setAmount(1);
 		}
 		
-		final String lc = s.toLowerCase();
-		final String of = Language.getSpaced("enchantments.of").toLowerCase();
+		String lc = s.toLowerCase(Locale.ENGLISH);
+		String of = Language.getSpaced("enchantments.of").toLowerCase();
 		int c = -1;
 		outer: while ((c = lc.indexOf(of, c + 1)) != -1) {
-			final ItemType t2 = t.clone();
-			final BlockingLogHandler log = SkriptLogger.startLogHandler(new BlockingLogHandler());
-			try {
+			ItemType t2 = t.clone();
+			try (BlockingLogHandler ignored = new BlockingLogHandler().start()) {
 				if (parseType("" + s.substring(0, c), t2, false) == null)
 					continue;
-			} finally {
-				log.stop();
 			}
 			if (t2.numTypes() == 0)
 				continue;
-			final String[] enchs = lc.substring(c + of.length()).split("\\s*(,|" + Pattern.quote(Language.get("and")) + ")\\s*");
+			String[] enchs = lc.substring(c + of.length()).split("\\s*(,|" + Pattern.quote(Language.get("and")) + ")\\s*");
 			for (final String ench : enchs) {
-				final EnchantmentType e = EnchantmentType.parse("" + ench);
+				EnchantmentType e = EnchantmentType.parse("" + ench);
 				if (e == null)
 					continue outer;
 				t2.addEnchantments(e);
@@ -311,17 +305,14 @@ public abstract class Aliases {
 	@Nullable
 	private static ItemType parseType(final String s, final ItemType t, final boolean isAlias) {
 		ItemType i;
-		final String type = s;
-		if (type.isEmpty()) {
+		if (s.isEmpty()) {
 			t.add(new ItemData(Material.AIR));
 			return t;
-		} else if (type.matches("\\d+")) {
-			Skript.error("Numeric ids are not supported anymore.");
+		} else if (s.matches("\\d+")) {
 			return null;
-		} else if ((i = getAlias(type)) != null) {
+		} else if ((i = getAlias(s)) != null) {
 			for (ItemData d : i) {
-				d = d.clone();
-				t.add(d);
+				t.add(d.clone());
 			}
 			return t;
 		}
@@ -339,7 +330,7 @@ public abstract class Aliases {
 	@Nullable
 	private static ItemType getAlias(final String s) {
 		ItemType i;
-		String lc = "" + s.toLowerCase();
+		String lc = "" + s.toLowerCase(Locale.ENGLISH);
 		final Matcher m = p_any.matcher(lc);
 		if (m.matches()) {
 			lc = "" + m.group(m.groupCount());
@@ -399,6 +390,22 @@ public abstract class Aliases {
 			Skript.exception(e);
 		}
 	}
+
+	/**
+	 * Temporarily create an alias for a material which may not have an alias yet.
+	 */
+	private static void loadMissingAliases() {
+		if (!Skript.methodExists(Material.class, "getKey"))
+			return;
+		for (Material material : Material.values()) {
+			if (!provider.hasAliasForMaterial(material)) {
+				NamespacedKey key = material.getKey();
+				String name = key.getKey().replace("_", " ");
+				parser.loadAlias(name + "¦s", key.toString());
+				Skript.debug(ChatColor.YELLOW + "Creating temporary alias for: " + key.toString());
+			}
+		}
+	}
 	
 	private static void loadInternal() throws IOException {
 		Path dataFolder = Skript.getInstance().getDataFolder().toPath();
@@ -422,6 +429,7 @@ public abstract class Aliases {
 					Path aliasesPath = zipFs.getPath("/", "aliases-english");
 					assert aliasesPath != null;
 					loadDirectory(aliasesPath);
+					loadMissingAliases();
 				}
 			} catch (URISyntaxException e) {
 				assert false;
@@ -504,7 +512,7 @@ public abstract class Aliases {
 	 */
 	@Nullable
 	public static String getMinecraftId(ItemData data) {
-		ScriptAliases aliases = scriptAliases;
+		ScriptAliases aliases = getScriptAliases();
 		if (aliases != null) {
 			return aliases.provider.getMinecraftId(data);
 		}
@@ -519,7 +527,7 @@ public abstract class Aliases {
 	 */
 	@Nullable
 	public static EntityData<?> getRelatedEntity(ItemData data) {
-		ScriptAliases aliases = scriptAliases;
+		ScriptAliases aliases = getScriptAliases();
 		if (aliases != null) {
 			return aliases.provider.getRelatedEntity(data);
 		}
@@ -578,20 +586,44 @@ public abstract class Aliases {
 	}
 	
 	/**
-	 * Creates script aliases.
-	 * @return Script aliases, ready to be added to.
+	 * Creates script aliases for the provided Script.
+	 * @return Script aliases that are ready to be added to.
 	 */
-	public static ScriptAliases createScriptAliases() {
+	public static ScriptAliases createScriptAliases(Script script) {
 		AliasesProvider localProvider = createProvider(10, provider);
-		return new ScriptAliases(localProvider, createParser(localProvider));
+		ScriptAliases aliases = new ScriptAliases(localProvider, createParser(localProvider));
+		script.addData(aliases);
+		return aliases;
 	}
-	
+
 	/**
-	 * Sets script aliases to be used for lookups. Remember to set them to
-	 * null when the script changes.
-	 * @param aliases Script aliases.
+	 * Clears any stored custom aliases for the provided Script.
+	 * @param script The script to clear aliases for.
 	 */
-	public static void setScriptAliases(@Nullable ScriptAliases aliases) {
-		scriptAliases = aliases;
+	public static void clearScriptAliases(Script script) {
+		script.removeData(ScriptAliases.class);
 	}
+
+	/**
+	 * Internal method for obtaining ScriptAliases. Checks {@link ParserInstance#isActive()}.
+	 * @return The obtained aliases, or null if the script has no custom aliases.
+	 */
+	@Nullable
+	private static ScriptAliases getScriptAliases() {
+		ParserInstance parser = ParserInstance.get();
+		if (parser.isActive())
+			return getScriptAliases(parser.getCurrentScript());
+		return null;
+	}
+
+	/**
+	 * Method for obtaining the ScriptAliases instance of a {@link Script}.
+	 * @param script The script to obtain aliases from.
+	 * @return The obtained aliases, or null if the script has no custom aliases.
+	 */
+	@Nullable
+	public static ScriptAliases getScriptAliases(Script script) {
+		return script.getData(ScriptAliases.class);
+	}
+
 }

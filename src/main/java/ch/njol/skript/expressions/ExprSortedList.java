@@ -18,11 +18,6 @@
  */
 package ch.njol.skript.expressions;
 
-import java.util.Arrays;
-
-import org.bukkit.event.Event;
-import org.eclipse.jdt.annotation.Nullable;
-
 import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
@@ -32,7 +27,14 @@ import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.ExpressionType;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.util.SimpleExpression;
+import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.Kleenean;
+import ch.njol.util.coll.CollectionUtils;
+import org.bukkit.event.Event;
+import org.eclipse.jdt.annotation.Nullable;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 @Name("Sorted List")
 @Description({"Sorts given list in natural order. All objects in list must be comparable;",
@@ -46,27 +48,34 @@ public class ExprSortedList extends SimpleExpression<Object> {
 		Skript.registerExpression(ExprSortedList.class, Object.class, ExpressionType.COMBINED, "sorted %objects%");
 	}
 
-	@SuppressWarnings("null")
+	@SuppressWarnings("NotNullFieldNotInitialized")
 	private Expression<?> list;
 
+	@SuppressWarnings("unused")
+	public ExprSortedList() {
+	}
+
+	public ExprSortedList(Expression<?> list) {
+		this.list = list;
+	}
+
 	@Override
-	@SuppressWarnings({"null", "unchecked"})
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-		list = exprs[0].getConvertedExpression(Object.class);
-		return list != null;
+		list = LiteralUtils.defendExpression(exprs[0]);
+		return LiteralUtils.canInitSafely(list);
 	}
 
 	@Override
 	@Nullable
 	protected Object[] get(Event e) {
-		Object[] unsorted = list.getAll(e);
-		Object[] sorted = new Object[unsorted.length]; // Not yet sorted...
+		Object[] unsorted = list.getArray(e);
+		Object[] sorted = (Object[]) Array.newInstance(getReturnType(), unsorted.length); // Not yet sorted...
 		
 		for (int i = 0; i < sorted.length; i++) {
 			Object value = unsorted[i];
 			if (value instanceof Long) {
 				// Hope it fits to the double...
-				sorted[i] = Double.valueOf(((Long) value).longValue());
+				sorted[i] = (double) (Long) value;
 			} else {
 				// No conversion needed
 				sorted[i] = value;
@@ -82,13 +91,27 @@ public class ExprSortedList extends SimpleExpression<Object> {
 	}
 
 	@Override
+	@Nullable
+	@SuppressWarnings("unchecked")
+	public <R> Expression<? extends R> getConvertedExpression(Class<R>... to) {
+		if (CollectionUtils.containsSuperclass(to, getReturnType()))
+			return (Expression<? extends R>) this;
+
+		Expression<? extends R> convertedList = list.getConvertedExpression(to);
+		if (convertedList != null)
+			return (Expression<? extends R>) new ExprSortedList(convertedList);
+
+		return null;
+	}
+
+	@Override
 	public boolean isSingle() {
 		return false;
 	}
 
 	@Override
-	public Class<? extends Object> getReturnType() {
-		return Object.class;
+	public Class<?> getReturnType() {
+		return list.getReturnType();
 	}
 
 	@Override

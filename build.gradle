@@ -5,37 +5,33 @@ import org.apache.tools.ant.filters.ReplaceTokens
 import java.time.LocalTime
 
 plugins {
-	id 'com.github.johnrengelman.shadow' version '6.1.0'
-	id 'com.github.hierynomus.license' version '0.14.0'
+	id 'com.github.johnrengelman.shadow' version '7.1.2'
+	id 'com.github.hierynomus.license' version '0.16.1'
+	id 'maven-publish'
 	id 'java'
 }
 
 allprojects {
 	repositories {
-		jcenter()
 		mavenCentral()
-		maven { url 'https://jitpack.io' }
 		maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
 		maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
-		maven { url 'https://papermc.io/repo/repository/maven-public/' }
+		maven { url 'https://repo.papermc.io/repository/maven-public/' }
 		maven { url 'https://ci.emc.gs/nexus/content/groups/aikar/' }
 	}
 }
 
 dependencies {
-	shadow group: 'io.papermc', name: 'paperlib', version: '1.0.6'
-	implementation group: 'com.destroystokyo.paper', name: 'paper-api', version: '1.16.4-R0.1-SNAPSHOT'
-	implementation group: 'org.eclipse.jdt', name: 'org.eclipse.jdt.annotation', version: '1.1.0'
+	shadow group: 'io.papermc', name: 'paperlib', version: '1.0.7'
+	shadow group: 'org.bstats', name: 'bstats-bukkit', version: '3.0.0'
+	implementation group: 'io.papermc.paper', name: 'paper-api', version: '1.19.2-R0.1-SNAPSHOT'
+	implementation group: 'org.eclipse.jdt', name: 'org.eclipse.jdt.annotation', version: '2.2.700'
 	implementation group: 'com.google.code.findbugs', name: 'findbugs', version: '3.0.1'
 	implementation group: 'com.sk89q.worldguard', name: 'worldguard-legacy', version: '7.0.0-SNAPSHOT'
-	implementation group: 'com.github.marcelo-mason', name: 'PreciousStones', version: '24e3d4bf67'
 	implementation group: 'net.milkbowl.vault', name: 'Vault', version: '1.7.1', {
 		exclude group: 'org.bstats', module: 'bstats-bukkit'
 	}
 	implementation fileTree(dir: 'lib', include: '*.jar')
-
-	testImplementation group: 'junit', name: 'junit', version: '4.13.2'
-	testImplementation group: 'org.easymock', name: 'easymock', version: '4.2'
 }
 
 compileJava.options.encoding = 'UTF-8'
@@ -44,7 +40,7 @@ compileTestJava.options.encoding = 'UTF-8'
 task checkAliases {
 	description 'Checks for the existence of the aliases.'
 	doLast {
-		def aliasFolder = new File('skript-aliases')
+		def aliasFolder = project.file('skript-aliases')
 		if (!aliasFolder.exists() || aliasFolder.listFiles().length == 0) {
 			throw new InvalidUserDataException('Aliases are missing from \'skript-aliases\' folder. Consider fetching submodules with \'git submodule update --init\'.')
 		}
@@ -68,28 +64,31 @@ task relocateShadowJar(type: ConfigureShadowRelocation) {
 
 task sourceJar(type: Jar) {
 	from sourceSets.main.allJava
+	archiveClassifier = "sources"
 }
 
 tasks.withType(ShadowJar) {
 	dependsOn relocateShadowJar
 	configurations = [
-		project.configurations.shadow,
-		project.configurations.compile
+		project.configurations.shadow
 	]
 	dependencies {
 		include(dependency('io.papermc:paperlib'))
+		include(dependency('org.bstats:bstats-bukkit'))
+		include(dependency('org.bstats:bstats-base'))
 	}
 	relocate 'io.papermc.lib', 'ch.njol.skript.paperlib'
+	relocate 'org.bstats', 'ch.njol.skript.bstats'
 	manifest {
 		attributes(
 			'Name': 'ch/njol/skript',
+			'Automatic-Module-Name': 'ch.njol.skript',
 			'Sealed': 'true'
 		)
 	}
 	from 'skript-aliases', {
 		into 'aliases-english' // Change this if we get aliases in other languages
 	}
-	from 'skript-worldguard6/build/classes/java/main'
 }
 
 processResources {
@@ -104,6 +103,29 @@ processResources {
 	]
 }
 
+publishing {
+	publications {
+		maven(MavenPublication) {
+			groupId "com.github.SkriptLang"
+			artifactId "Skript"
+			version project.version
+			artifact sourceJar
+			artifact tasks.jar
+		}
+	}
+
+	repositories {
+		maven {
+			name = "repo"
+			url = "https://repo.skriptlang.org/releases"
+			credentials {
+				username = System.getenv("MAVEN_USERNAME")
+				password = System.getenv("MAVEN_PASSWORD")
+			}
+		}
+	}
+}
+
 license {
 	header file('licenseheader.txt')
 	exclude('**/Metrics.java') // Not under GPLv3
@@ -114,12 +136,12 @@ license {
 }
 
 // Task to check that test scripts are named correctly
-tasks.create('testNaming') {
+tasks.register('testNaming') {
 	doLast {
 		// Regression tests
 		for (def file : project.file('src/test/skript/tests/regressions').listFiles()) {
 			def name = file.getName()
-			if (name.toLowerCase() != name) {
+			if (name.toLowerCase(Locale.ENGLISH) != name) {
 				throw new InvalidUserDataException('invalid test name: ' + name)
 			}
 		}
@@ -136,41 +158,53 @@ tasks.create('testNaming') {
 	}
 }
 
-// Create a test task with given name, environments dir/file and is it development mode task
-void createTestTask(String name, String environments, boolean devMode) {
-	tasks.create(name) {
-		// Execute JUnit tests, compile Skript and check test naming
-		dependsOn test, jar, testNaming
-		doFirst {
-			if (devMode) {
-				standardInput = System.in
-			}
-			javaexec {
-				group = 'execution'
-				classpath = files([
-					'build' + File.separator + 'libs' + File.separator + 'Skript.jar',
-					project.configurations.runtimeClasspath.find { it.name.startsWith('gson') },
-					sourceSets.main.runtimeClasspath
-				])
-				main = 'ch.njol.skript.tests.platform.PlatformMain'
-				args = [
-					'test_runners',
-					'src/test/skript/tests',
-					'src/test/resources/runner_data',
-					environments,
-					devMode
-				]
-			}
+// Create a test task with given name, environments dir/file, dev mode and java version.
+void createTestTask(String name, String environments, boolean devMode, int javaVersion, boolean genDocs) {
+	tasks.register(name, JavaExec) {
+		dependsOn jar, testNaming
+		javaLauncher = javaToolchains.launcherFor {
+	        languageVersion = JavaLanguageVersion.of(javaVersion)
+	    }
+		if (devMode) {
+			standardInput = System.in
 		}
+		group = 'execution'
+		classpath = files([
+			'build' + File.separator + 'libs' + File.separator + 'Skript.jar',
+			project.configurations.runtimeClasspath.find { it.name.startsWith('gson') },
+			sourceSets.main.runtimeClasspath
+		])
+		main = 'ch.njol.skript.tests.platform.PlatformMain'
+		args = [
+			'test_runners',
+			'src/test/skript/tests',
+			'src/test/resources/runner_data',
+			environments,
+			devMode,
+			genDocs
+		]
 	}
 }
 
+def latestEnv = 'java17/paper-1.19.2.json'
+def latestJava = 17
+def oldestJava = 8
+
+tasks.withType(JavaCompile).configureEach {
+	options.compilerArgs += ["-source", "" + oldestJava, "-target", "" + oldestJava]
+}
+
 // Register different Skript testing tasks
-createTestTask('quickTest', 'src/test/skript/environments/main/paper-1.16.3.json', false)
-createTestTask('skriptTest', 'src/test/skript/environments/main', false)
-createTestTask('skriptTestFull', 'src/test/skript/environments/', false)
-createTestTask('skriptTestDev', 'src/test/skript/environments/main/' + (project.property('testEnv') == null
-	? 'paper-1.16.3.json' : project.property('testEnv') + '.json'), true)
+createTestTask('quickTest', 'src/test/skript/environments/' + latestEnv, false, latestJava, false)
+createTestTask('skriptTestJava17', 'src/test/skript/environments/java17', false, latestJava, false)
+createTestTask('skriptTestJava8', 'src/test/skript/environments/java8', false, oldestJava, false)
+createTestTask('skriptTestDev', 'src/test/skript/environments/' + (project.property('testEnv') == null
+	? latestEnv : project.property('testEnv') + '.json'), true, Integer.parseInt(project.property('testEnvJavaVersion') == null
+	? latestJava : project.property('testEnvJavaVersion')), false)
+tasks.register('skriptTest') {dependsOn skriptTestJava8, skriptTestJava17}
+createTestTask('genDocs', 'src/test/skript/environments/' + (project.property('testEnv') == null
+	? latestEnv : project.property('testEnv') + '.json'), false, Integer.parseInt(project.property('testEnvJavaVersion') == null
+	? latestJava : project.property('testEnvJavaVersion')), true)
 
 // Build flavor configurations
 task githubResources(type: ProcessResources) {
@@ -202,10 +236,10 @@ task githubRelease(type: ShadowJar) {
 	manifest {
 		attributes(
 			'Name': 'ch/njol/skript',
+			'Automatic-Module-Name': 'ch.njol.skript',
 			'Sealed': 'true'
 		)
 	}
-	from 'skript-worldguard6/build/classes/java/main'
 }
 
 task spigotResources(type: ProcessResources) {
@@ -237,10 +271,10 @@ task spigotRelease(type: ShadowJar) {
 	manifest {
 		attributes(
 			'Name': 'ch/njol/skript',
+			'Automatic-Module-Name': 'ch.njol.skript',
 			'Sealed': 'true'
 		)
 	}
-	from 'skript-worldguard6/build/classes/java/main'
 }
 
 task nightlyResources(type: ProcessResources) {
@@ -268,8 +302,8 @@ task nightlyRelease(type: ShadowJar) {
 	manifest {
 		attributes(
 			'Name': 'ch/njol/skript',
+			'Automatic-Module-Name': 'ch.njol.skript',
 			'Sealed': 'true'
 		)
 	}
-	from 'skript-worldguard6/build/classes/java/main'
 }

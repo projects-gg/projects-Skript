@@ -62,6 +62,11 @@ code. Contributors should also see the dedicated
 * When there are multiple annotations, place them in order:
   - @Override -> @Nullable -> @SuppressWarnings
   - For other annotations, doesn't matter; let your IDE decide
+* When splitting Strings into multiple lines the last part of the string must be (space character included) " " +
+  ```java
+  String string = "example string " +
+        "with more to add";
+  ```
   
 * When extending one of following classes: SimpleExpression, SimplePropertyExpression, Effect, Condition...
   - Put overridden methods in order
@@ -107,10 +112,9 @@ Your comments should look something like these:
 ```
 
 ## Language Features
-* Java 8 source and binary compatibility
-  - JDK 8 must be enough to develop Skript
+* Java 8 source and binary compatibility, even though compiling Skript requires Java 16
   - Users must not need JRE newer than version 8
-* Java 9 and 10 must also work
+* Versions up to and including Java 16 should work too
   - Absolutely no dirty deep reflection hacks
 * It is recommended to make fields final, if they are effectively final
   - Performance impact is be minimal, but it makes code cleaner

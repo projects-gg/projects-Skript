@@ -22,7 +22,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.eclipse.jdt.annotation.Nullable;
 
-import ch.njol.skript.ScriptLoader;
 import ch.njol.skript.Skript;
 import ch.njol.skript.classes.Changer.ChangeMode;
 import ch.njol.skript.doc.Description;
@@ -57,7 +56,7 @@ public class ExprExplosionYield extends SimpleExpression<Number> {
 
 	@Override
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-		if (!ScriptLoader.isCurrentEvent(ExplosionPrimeEvent.class)) {
+		if (!getParser().isCurrentEvent(ExplosionPrimeEvent.class)) {
 			Skript.error("The explosion radius is only usable in explosion prime events", ErrorQuality.SEMANTIC_ERROR);
 			return false;
 		}
@@ -67,6 +66,9 @@ public class ExprExplosionYield extends SimpleExpression<Number> {
 	@Override
 	@Nullable
 	protected Number[] get(Event e) {
+		if (!(e instanceof ExplosionPrimeEvent))
+			return null;
+
 		return new Number[]{((ExplosionPrimeEvent) e).getRadius()};
 	}
 
@@ -87,7 +89,7 @@ public class ExprExplosionYield extends SimpleExpression<Number> {
 	@Override
 	public void change(final Event event, final @Nullable Object[] delta, final ChangeMode mode) {
 		float f = delta == null ? 0 : ((Number) delta[0]).floatValue();
-		if (f < 0) // Negative values will throw an error.
+		if (f < 0 || !(event instanceof ExplosionPrimeEvent)) // Negative values will throw an error.
 			return;
 		ExplosionPrimeEvent e = (ExplosionPrimeEvent) event;
 		switch (mode) {

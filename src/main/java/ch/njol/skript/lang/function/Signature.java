@@ -18,12 +18,12 @@
  */
 package ch.njol.skript.lang.function;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
+import ch.njol.skript.classes.ClassInfo;
 import org.eclipse.jdt.annotation.Nullable;
 
-import ch.njol.skript.classes.ClassInfo;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.WeakHashMap;
 
 /**
  * Function signature: name, parameter types and a return type.
@@ -44,7 +44,12 @@ public class Signature<T> {
 	 * Parameters taken by this function, in order.
 	 */
 	final Parameter<?>[] parameters;
-	
+
+	/**
+	 * Whether this function is only accessible in the script it was declared in
+	 */
+	final boolean local;
+
 	/**
 	 * Return type of this function. For functions that return nothing, this
 	 * is null. void is never used as return type, because it is not registered
@@ -64,14 +69,15 @@ public class Signature<T> {
 	 */
 	final Collection<FunctionReference<?>> calls;
 	
-	public Signature(String script, String name, Parameter<?>[] parameters, @Nullable final ClassInfo<T> returnType, boolean single) {
+	Signature(String script, String name, Parameter<?>[] parameters, boolean local, @Nullable final ClassInfo<T> returnType, boolean single) {
 		this.script = script;
 		this.name = name;
 		this.parameters = parameters;
+		this.local = local;
 		this.returnType = returnType;
 		this.single = single;
 		
-		calls = new ArrayList<>();
+		calls = Collections.newSetFromMap(new WeakHashMap<>());
 	}
 	
 	public String getName() {
@@ -86,7 +92,11 @@ public class Signature<T> {
 	public Parameter<?>[] getParameters() {
 		return parameters;
 	}
-	
+
+	public boolean isLocal() {
+		return local;
+	}
+
 	@Nullable
 	public ClassInfo<T> getReturnType() {
 		return returnType;
@@ -123,4 +133,5 @@ public class Signature<T> {
 	public int hashCode() {
 		return name.hashCode();
 	}
+	
 }

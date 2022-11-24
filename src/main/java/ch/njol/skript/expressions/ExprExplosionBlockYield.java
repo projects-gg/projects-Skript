@@ -22,7 +22,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.eclipse.jdt.annotation.Nullable;
 
-import ch.njol.skript.ScriptLoader;
 import ch.njol.skript.Skript;
 import ch.njol.skript.classes.Changer.ChangeMode;
 import ch.njol.skript.doc.Description;
@@ -57,7 +56,7 @@ public class ExprExplosionBlockYield extends SimpleExpression<Number> {
 
 	@Override
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-		if (!ScriptLoader.isCurrentEvent(EntityExplodeEvent.class)) {
+		if (!getParser().isCurrentEvent(EntityExplodeEvent.class)) {
 			Skript.error("The 'explosion block yield' is only usable in an explosion event", ErrorQuality.SEMANTIC_ERROR);
 			return false;
 		}
@@ -67,6 +66,9 @@ public class ExprExplosionBlockYield extends SimpleExpression<Number> {
 	@Override
 	@Nullable
 	protected Number[] get(Event e) {
+		if (!(e instanceof EntityExplodeEvent))
+			return null;
+
 		return new Number[]{((EntityExplodeEvent) e).getYield()};
 	}
 
@@ -87,7 +89,7 @@ public class ExprExplosionBlockYield extends SimpleExpression<Number> {
 	@Override
 	public void change(final Event event, final @Nullable Object[] delta, final ChangeMode mode) {
 		float n = delta == null ? 0 : ((Number) delta[0]).floatValue();
-		if (n < 0) // Yield can't be negative
+		if (n < 0 || !(event instanceof EntityExplodeEvent)) // Yield can't be negative
 			return;
 		EntityExplodeEvent e = (EntityExplodeEvent) event;
 		// Yield can be a value from 0 to 1

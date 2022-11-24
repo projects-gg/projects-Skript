@@ -32,12 +32,12 @@ public abstract class JavaFunction<T> extends Function<T> {
 	}
 	
 	public JavaFunction(String name, Parameter<?>[] parameters, ClassInfo<T> returnType, boolean single) {
-		this(new Signature<>("none", name, parameters, returnType, single));
+		this(new Signature<>("none", name, parameters, false, returnType, single));
 	}
 	
 	@Override
 	@Nullable
-	public abstract T[] execute(FunctionEvent e, Object[][] params);
+	public abstract T[] execute(FunctionEvent<?> e, Object[][] params);
 	
 	@Nullable
 	private String[] description = null;
@@ -48,8 +48,7 @@ public abstract class JavaFunction<T> extends Function<T> {
 	
 	/**
 	 * Only used for Skript's documentation.
-	 * 
-	 * @param description
+	 *
 	 * @return This JavaFunction object
 	 */
 	public JavaFunction<T> description(final String... description) {
@@ -60,8 +59,7 @@ public abstract class JavaFunction<T> extends Function<T> {
 	
 	/**
 	 * Only used for Skript's documentation.
-	 * 
-	 * @param examples
+	 *
 	 * @return This JavaFunction object
 	 */
 	public JavaFunction<T> examples(final String... examples) {
@@ -72,8 +70,7 @@ public abstract class JavaFunction<T> extends Function<T> {
 	
 	/**
 	 * Only used for Skript's documentation.
-	 * 
-	 * @param since
+	 *
 	 * @return This JavaFunction object
 	 */
 	public JavaFunction<T> since(final String since) {

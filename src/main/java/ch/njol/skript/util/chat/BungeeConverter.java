@@ -32,7 +32,7 @@ import net.md_5.bungee.api.chat.TextComponent;
  */
 public class BungeeConverter {
 
-	private static boolean HAS_INSERTION_SUPPORT = Skript.methodExists(BaseComponent.class, "setInsertion", String.class);
+	private static boolean HAS_FONT_SUPPORT = Skript.methodExists(BaseComponent.class, "setFont", String.class);
 
 	@SuppressWarnings("null")
 	public static BaseComponent convert(MessageComponent origin) {
@@ -45,21 +45,16 @@ public class BungeeConverter {
 		base.setObfuscated(origin.obfuscated);
 		if (origin.color != null)
 			base.setColor(origin.color);
-		/*
-		 * This method doesn't exist on normal spigot 1.8
-		 * and it's not worth working around since people affected
-		 * can just use paper 1.8 and it will work fine
-		 */
-		if (HAS_INSERTION_SUPPORT) {
-			base.setInsertion(origin.insertion);
-		}
-		
+		base.setInsertion(origin.insertion);
+
 		if (origin.clickEvent != null)
 			base.setClickEvent(new ClickEvent(ClickEvent.Action.valueOf(origin.clickEvent.action.spigotName), origin.clickEvent.value));
 		if (origin.hoverEvent != null)
 			base.setHoverEvent(new HoverEvent(HoverEvent.Action.valueOf(origin.hoverEvent.action.spigotName),
 					convert(ChatMessages.parse(origin.hoverEvent.value)))); // Parse color (and possibly hex codes) here
-		
+
+		if (origin.font != null && HAS_FONT_SUPPORT)
+			base.setFont(origin.font);
 		return base;
 	}
 

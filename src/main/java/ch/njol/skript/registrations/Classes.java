@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.NotSerializableException;
 import java.io.SequenceInputStream;
+import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -279,8 +281,8 @@ public abstract class Classes {
 	 * <p>
 	 * This method can be called even while Skript is loading.
 	 * 
-	 * @param c The exact class to get the class info for
-	 * @return The class info for the given class of null if no info was found.
+	 * @param c The exact class to get the class info for.
+	 * @return The class info for the given class or null if no info was found.
 	 */
 	@SuppressWarnings("unchecked")
 	@Nullable
@@ -333,7 +335,7 @@ public abstract class Classes {
 	@Nullable
 	public static ClassInfo<?> getClassInfoFromUserInput(String name) {
 		checkAllowClassInfoInteraction();
-		name = "" + name.toLowerCase();
+		name = "" + name.toLowerCase(Locale.ENGLISH);
 		for (final ClassInfo<?> ci : getClassInfos()) {
 			final Pattern[] uip = ci.getUserInputPatterns();
 			if (uip == null)
@@ -383,6 +385,28 @@ public abstract class Classes {
 		checkAllowClassInfoInteraction();
 		final ClassInfo<T> ci = getExactClassInfo(c);
 		return ci == null ? null : ci.getDefaultExpression();
+	}
+	
+	/**
+	 * Clones the given object by calling {@link ClassInfo#clone(Object)},
+	 * getting the {@link ClassInfo} from the closest registered superclass
+	 * (or the given object's class). Supports arrays too.
+	 */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static Object clone(Object obj) {
+		if (obj == null)
+			return null;
+		if (obj.getClass().isArray()) {
+			int length = Array.getLength(obj);
+			Object clone = Array.newInstance(obj.getClass().getComponentType(), length);
+			for (int i = 0; i < length; i++) {
+				Array.set(clone, i, clone(Array.get(obj, i)));
+			}
+			return clone;
+		} else {
+			ClassInfo classInfo = getSuperClassInfo(obj.getClass());
+			return classInfo.clone(obj);
+		}
 	}
 	
 	/**
@@ -548,12 +572,7 @@ public abstract class Classes {
 			public String toVariableNameString(final T o) {
 				throw new UnsupportedOperationException();
 			}
-			
-			@Override
-			public String getVariableNamePattern() {
-				throw new UnsupportedOperationException();
-			}
-		};
+        };
 	}
 	
 	/**
@@ -672,8 +691,7 @@ public abstract class Classes {
 	/**
 	 * Must be called on the appropriate thread for the given value (i.e. the main thread currently)
 	 */
-	@Nullable
-	public static SerializedVariable.Value serialize(@Nullable Object o) {
+	public static SerializedVariable.@Nullable Value serialize(@Nullable Object o) {
 		if (o == null)
 			return null;
 		

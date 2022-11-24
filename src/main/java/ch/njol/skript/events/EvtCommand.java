@@ -37,16 +37,16 @@ import ch.njol.util.coll.CollectionUtils;
 public class EvtCommand extends SkriptEvent { // TODO condition to check whether a given command exists, & a conditon to check whether it's a custom skript command
 	static {
 		Skript.registerEvent("Command", EvtCommand.class, CollectionUtils.array(PlayerCommandPreprocessEvent.class, ServerCommandEvent.class), "command [%-string%]")
-				.description("Called when a player enters a command (not neccessarily a Skript command).")
+				.description("Called when a player enters a command (not necessarily a Skript command) but you can check if command is a skript command, see <a href='conditions.html#CondIsSkriptCommand'>Is a Skript command condition</a>.")
 				.examples("on command:", "on command \"/stop\":", "on command \"pm Njol \":")
 				.since("2.0");
 	}
 	
 	@Nullable
 	private String command = null;
-	
-	@SuppressWarnings("null")
+
 	@Override
+	@SuppressWarnings("null")
 	public boolean init(final Literal<?>[] args, final int matchedPattern, final ParseResult parser) {
 		if (args[0] != null) {
 			command = ((Literal<String>) args[0]).getSingle();
@@ -55,10 +55,13 @@ public class EvtCommand extends SkriptEvent { // TODO condition to check whether
 		}
 		return true;
 	}
-	
-	@SuppressWarnings("null")
+
 	@Override
+	@SuppressWarnings("null")
 	public boolean check(final Event e) {
+		if (e instanceof ServerCommandEvent && ((ServerCommandEvent) e).getCommand().isEmpty())
+			return false;
+
 		if (command == null)
 			return true;
 		final String message;

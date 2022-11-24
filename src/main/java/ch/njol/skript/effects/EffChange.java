@@ -21,10 +21,11 @@ package ch.njol.skript.effects;
 import java.util.Arrays;
 import java.util.logging.Level;
 
+import org.skriptlang.skript.lang.script.Script;
+import org.skriptlang.skript.lang.script.ScriptWarning;
 import org.bukkit.event.Event;
 import org.eclipse.jdt.annotation.Nullable;
 
-import ch.njol.skript.ScriptLoader;
 import ch.njol.skript.Skript;
 import ch.njol.skript.SkriptConfig;
 import ch.njol.skript.classes.Changer;
@@ -45,7 +46,6 @@ import ch.njol.skript.log.ParseLogHandler;
 import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.Patterns;
-import ch.njol.skript.util.ScriptOptions;
 import ch.njol.skript.util.Utils;
 import ch.njol.util.Kleenean;
 
@@ -55,7 +55,7 @@ import ch.njol.util.Kleenean;
 @Name("Change: Set/Add/Remove/Delete/Reset")
 @Description("A very general effect that can change many <a href='../expressions'>expressions</a>. Many expressions can only be set and/or deleted, while some can have things added to or removed from them.")
 @Examples({"# set:",
-		"Set the player's display name to \"<red>%name of player%\"",
+		"Set the player's display name to \"&lt;red&gt;%name of player%\"",
 		"set the block above the victim to lava",
 		"# add:",
 		"add 2 to the player's health # preferably use '<a href='#heal'>heal</a>' for this",
@@ -149,13 +149,13 @@ public class EffChange extends Effect {
 				changed = exprs[0];
 		}
 		
-		final CountingLogHandler h = SkriptLogger.startLogHandler(new CountingLogHandler(Level.SEVERE));
-		final Class<?>[] rs;
-		final String what;
+		CountingLogHandler h = new CountingLogHandler(Level.SEVERE).start();
+		Class<?>[] rs;
+		String what;
 		try {
 			rs = changed.acceptChange(mode);
-			final ClassInfo<?> c = Classes.getSuperClassInfo(changed.getReturnType());
-			final Changer<?> changer = c.getChanger();
+			ClassInfo<?> c = Classes.getSuperClassInfo(changed.getReturnType());
+			Changer<?> changer = c.getChanger();
 			what = changer == null || !Arrays.equals(changer.acceptChange(mode), rs) ? changed.toString(null, false) : c.getName().withIndefiniteArticle();
 		} finally {
 			h.stop();
@@ -217,16 +217,17 @@ public class EffChange extends Effect {
 						return false;
 					}
 					log.clear();
-					log.printLog();
+					log.stop();
 					final Class<?>[] r = new Class[rs.length];
 					for (int i = 0; i < rs.length; i++)
 						r[i] = rs[i].isArray() ? rs[i].getComponentType() : rs[i];
-					if (rs.length == 1 && rs[0] == Object.class)
+					if (r.length == 1 && r[0] == Object.class)
 						Skript.error("Can't understand this expression: " + changer, ErrorQuality.NOT_AN_EXPRESSION);
 					else if (mode == ChangeMode.SET)
 						Skript.error(what + " can't be set to " + changer + " because the latter is " + SkriptParser.notOfType(r), ErrorQuality.SEMANTIC_ERROR);
 					else
 						Skript.error(changer + " can't be " + (mode == ChangeMode.ADD ? "added to" : "removed from") + " " + what + " because the former is " + SkriptParser.notOfType(r), ErrorQuality.SEMANTIC_ERROR);
+					log.printError();
 					return false;
 				}
 				log.printLog();
@@ -257,11 +258,7 @@ public class EffChange extends Effect {
 			if (changed instanceof Variable && !((Variable<?>) changed).isLocal() && (mode == ChangeMode.SET || ((Variable<?>) changed).isList() && mode == ChangeMode.ADD)) {
 				final ClassInfo<?> ci = Classes.getSuperClassInfo(ch.getReturnType());
 				if (ci.getC() != Object.class && ci.getSerializer() == null && ci.getSerializeAs() == null && !SkriptConfig.disableObjectCannotBeSavedWarnings.value()) {
-					if (ScriptLoader.currentScript != null) {
-						if (!ScriptOptions.getInstance().suppressesWarning(ScriptLoader.currentScript.getFile(), "instance var")) {
-							Skript.warning(ci.getName().withIndefiniteArticle() + " cannot be saved, i.e. the contents of the variable " + changed + " will be lost when the server stops.");
-						}
-					} else {
+					if (!getParser().getCurrentScript().suppressesWarning(ScriptWarning.VARIABLE_SAVE)) {
 						Skript.warning(ci.getName().withIndefiniteArticle() + " cannot be saved, i.e. the contents of the variable " + changed + " will be lost when the server stops.");
 					}
 				}
@@ -271,22 +268,16 @@ public class EffChange extends Effect {
 	}
 	
 	@Override
-	protected void execute(final Event e) {
-		final Expression<?> changer = this.changer;
+	protected void execute(Event e) {
 		Object[] delta = changer == null ? null : changer.getArray(e);
 		delta = changer == null ? delta : changer.beforeChange(changed, delta);
-		if (delta != null && delta.length == 0)
+
+		if ((delta == null || delta.length == 0) && (mode != ChangeMode.DELETE && mode != ChangeMode.RESET)) {
+			if (mode == ChangeMode.SET && changed.acceptChange(ChangeMode.DELETE) != null)
+				changed.change(e, null, ChangeMode.DELETE);
 			return;
-		if (delta == null && (mode != ChangeMode.DELETE && mode != ChangeMode.RESET))
-			return;
-		changed.change(e, delta, mode); // Trigger beforeChanged hook
-		// REMIND use a random element out of delta if changed only supports changing a single instance
-//		changed.change(e, new Changer2<Object>() {
-//			@Override
-//			public Object change(Object o) {
-//				return delta;
-//			}
-//		}, mode);
+		}
+		changed.change(e, delta, mode);
 	}
 	
 	@Override

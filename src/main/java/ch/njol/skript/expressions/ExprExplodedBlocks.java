@@ -25,7 +25,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.eclipse.jdt.annotation.Nullable;
 
-import ch.njol.skript.ScriptLoader;
 import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Events;
@@ -53,7 +52,7 @@ public class ExprExplodedBlocks extends SimpleExpression<Block> {
 	
 	@Override
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, SkriptParser.ParseResult parseResult) {
-		if (!ScriptLoader.isCurrentEvent(EntityExplodeEvent.class)) {
+		if (!getParser().isCurrentEvent(EntityExplodeEvent.class)) {
 			Skript.error("Exploded blocks can only be retrieved from an explode event.");
 			return false;
 		}
@@ -63,6 +62,9 @@ public class ExprExplodedBlocks extends SimpleExpression<Block> {
 	@Nullable
 	@Override
 	protected Block[] get(Event e) {
+		if (!(e instanceof EntityExplodeEvent))
+			return null;
+
 		List<Block> blockList = ((EntityExplodeEvent) e).blockList();
 		return blockList.toArray(new Block[blockList.size()]);
 	}

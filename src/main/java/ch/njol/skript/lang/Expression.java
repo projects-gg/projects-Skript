@@ -18,19 +18,7 @@
  */
 package ch.njol.skript.lang;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Spliterators;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import org.bukkit.event.Event;
-import org.bukkit.inventory.ItemStack;
-import org.eclipse.jdt.annotation.Nullable;
-
-import ch.njol.skript.ScriptLoader;
 import ch.njol.skript.Skript;
-import ch.njol.skript.aliases.ItemType;
 import ch.njol.skript.classes.Changer;
 import ch.njol.skript.classes.Changer.ChangeMode;
 import ch.njol.skript.classes.Changer.ChangerUtils;
@@ -39,8 +27,18 @@ import ch.njol.skript.conditions.CondIsSet;
 import ch.njol.skript.lang.util.ConvertedExpression;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.skript.log.ErrorQuality;
+import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.slot.Slot;
 import ch.njol.util.Checker;
+import org.bukkit.event.Event;
+import org.bukkit.inventory.ItemStack;
+import org.eclipse.jdt.annotation.Nullable;
+
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Represents an expression. Expressions are used within conditions, effects and other expressions.
@@ -65,7 +63,20 @@ public interface Expression<T> extends SyntaxElement, Debuggable {
 	 * @throws UnsupportedOperationException (optional) if this was called on a non-single expression
 	 */
 	@Nullable
-	public T getSingle(final Event e);
+	T getSingle(Event e);
+
+	/**
+	 * Get an optional of the single value of this expression.
+	 * <p>
+	 * Do not use this in conditions, use {@link #check(Event, Checker, boolean)} instead.
+	 *
+	 * @param e the event
+	 * @return an {@link Optional} containing the {@link #getSingle(Event) single value} of this expression for this event.
+	 * @see #getSingle(Event)
+	 */
+	default Optional<T> getOptionalSingle(Event e) {
+		return Optional.ofNullable(getSingle(e));
+	}
 	
 	/**
 	 * Get all the values of this expression. The returned array is empty if this expression doesn't have any values for the given event.
@@ -119,7 +130,7 @@ public interface Expression<T> extends SyntaxElement, Debuggable {
 	 * 
 	 * @param e The event
 	 * @param c A checker
-	 * @param negated The cheking condition's negated state. This is used to invert the output of the checker if set to true (i.e. <tt>negated ^ checker.check(...)</tt>)
+	 * @param negated The checking condition's negated state. This is used to invert the output of the checker if set to true (i.e. <tt>negated ^ checker.check(...)</tt>)
 	 * @return Whether this expression matches or doesn't match the given checker depending on the condition's negated state.
 	 * @see SimpleExpression#check(Object[], Checker, boolean, boolean)
 	 */
@@ -184,10 +195,10 @@ public interface Expression<T> extends SyntaxElement, Debuggable {
 	 * 
 	 * @param time -1 for past or 1 for future. 0 is never passed to this method as it represents the default state.
 	 * @return Whether this expression has distinct time states, e.g. a player never changes but a block can. This should be sensitive for the event (using
-	 *         {@link ScriptLoader#isCurrentEvent(Class)}).
+	 *         {@link ch.njol.skript.lang.parser.ParserInstance#isCurrentEvent(Class)}).
 	 * @see SimpleExpression#setTime(int, Class, Expression...)
 	 * @see SimpleExpression#setTime(int, Expression, Class...)
-	 * @see ScriptLoader#isCurrentEvent(Class...)
+	 * @see ch.njol.skript.lang.parser.ParserInstance#isCurrentEvent(Class...)
 	 */
 	public boolean setTime(int time);
 	
@@ -295,9 +306,10 @@ public interface Expression<T> extends SyntaxElement, Debuggable {
 			return null;
 		
 		// Slots must be transformed to item stacks when writing to variables
-		// Also, item stacks must be cloned (to be safe from Vanilla /clear)
-		Object[] newDelta = null; // Created when a needs to be cloned
+		// Also, some types must be cloned
+		Object[] newDelta = null;
 		if (changed instanceof Variable) {
+			newDelta = new Object[delta.length];
 			for (int i = 0; i < delta.length; i++) {
 				Object value = delta[i];
 				if (value instanceof Slot) {
@@ -306,23 +318,9 @@ public interface Expression<T> extends SyntaxElement, Debuggable {
 						item = item.clone(); // ItemStack in inventory is mutable
 					}
 					
-					if (newDelta == null) {
-						newDelta = new Object[delta.length];
-						System.arraycopy(delta, 0, newDelta, 0, delta.length);
-					}
 					newDelta[i] = item;
-				} else if (value instanceof ItemType) {
-					if (newDelta == null) {
-						newDelta = new Object[delta.length];
-						System.arraycopy(delta, 0, newDelta, 0, delta.length);
-					}
-					newDelta[i] = ((ItemType) value).clone();
-				} else if (value instanceof ItemStack) {
-					if (newDelta == null) {
-						newDelta = new Object[delta.length];
-						System.arraycopy(delta, 0, newDelta, 0, delta.length);
-					}
-					newDelta[i] = ((ItemStack) value).clone();
+				} else {
+					newDelta[i] = Classes.clone(delta[i]);
 				}
 			}
 		}
