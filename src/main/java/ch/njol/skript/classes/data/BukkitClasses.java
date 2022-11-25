@@ -36,6 +36,7 @@ import org.bukkit.GameMode;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
@@ -46,6 +47,8 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.structure.Mirror;
+import org.bukkit.block.structure.StructureRotation;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentOffer;
@@ -1503,7 +1506,10 @@ public class BukkitClasses {
 						@Override
 						@Nullable
 						public Structure parse(String input, ParseContext context) {
-							return Bukkit.getStructureManager().loadStructure(Utils.getNamespacedKey(input), false);
+							NamespacedKey key = Utils.getNamespacedKey(input);
+							if (key == null)
+								return null;
+							return Bukkit.getStructureManager().loadStructure(key, false);
 						}
 
 						@Override
@@ -1521,6 +1527,18 @@ public class BukkitClasses {
 							return "Structure " + structure.toString();
 						}
 					}));
+
+			Classes.registerClass(new EnumClassInfo<>(StructureRotation.class, "structurerotation", "structure rotations")
+					.user("structure ?rotations?")
+					.name("Structure Rotations")
+					.description("Represents a rotation a structure can be rotated as when placed.")
+					.since("INSERT VERSION"));
+
+			Classes.registerClass(new EnumClassInfo<>(Mirror.class, "mirror", "mirrors")
+					.user("mirrors?")
+					.name("mirror")
+					.description("Represents a mirror setting a structure can be when placed.")
+					.since("INSERT VERSION"));
 		}
 	}
 }
