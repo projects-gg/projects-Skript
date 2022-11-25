@@ -48,15 +48,17 @@ import ch.njol.util.Kleenean;
 @Name("Structure Place")
 @Description({
 	"Places a structure. This can be used as an effect and as a section.",
-	"If it is used as a section, the section is run before the entity is added to the world.",
-	"You can modify the entity in this section, using for example 'event-entity' or 'cow'. ",
-	"Do note that other event values, such as 'player', won't work in this section."
+	"If it is used as a section, the section is run before the structure is placed in the world.",
+	"You can modify the place settings like if it should include entities and any rotation/mirror option you want.",
+	"For more info on the section settings see <a href='expressions.html#ExprStructureSectionInfo'>Structure Place Settings</a>"
 })
 @Examples({
-	"spawn 3 creepers at the targeted block",
-	"spawn a ghast 5 meters above the player",
-	"spawn a zombie at the player:",
-	"\tset name of the zombie to \"\""
+	"place structure \"minecraft:end_city\" at player's location without entities",
+		"\tset integrity to 0.9",
+		"\tset pallet to -1 # -1 for random pallet",
+		"\tset pallet to -1 # random pallet",
+		"\tset rotation to counter clockwise 90",
+		"\tset mirror to none # already the default not required"
 })
 @Since("INSERT VERSION")
 public class EffSecStructurePlace extends EffectSection {

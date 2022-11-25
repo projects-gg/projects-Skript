@@ -1501,6 +1501,7 @@ public class BukkitClasses {
 					.name("Structure")
 					.description("Represents a structure in a namespace.")
 					.defaultExpression(new EventValueExpression<>(Structure.class))
+					.requiredPlugins("Minecraft 1.17.1")
 					.since("INSERT VERSION")
 					.parser(new Parser<Structure>() {
 						@Override
@@ -1532,12 +1533,14 @@ public class BukkitClasses {
 					.user("structure ?rotations?")
 					.name("Structure Rotations")
 					.description("Represents a rotation a structure can be rotated as when placed.")
+					.requiredPlugins("Minecraft 1.17.1")
 					.since("INSERT VERSION"));
 
 			Classes.registerClass(new EnumClassInfo<>(Mirror.class, "mirror", "mirrors")
 					.user("mirrors?")
 					.name("mirror")
 					.description("Represents a mirror setting a structure can be when placed.")
+					.requiredPlugins("Minecraft 1.17.1")
 					.since("INSERT VERSION"));
 		}
 	}

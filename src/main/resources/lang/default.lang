@@ -1878,7 +1878,7 @@ moon phases:
 structure rotations:
 	clockwise_180: clockwise 180
 	clockwise_90: clockwise 90
-	counterclockwise_90: counter clockwise 90: 
+	counterclockwise_90: counter clockwise 90
 	none: none, default
 
 # -- Structure Mirrors --

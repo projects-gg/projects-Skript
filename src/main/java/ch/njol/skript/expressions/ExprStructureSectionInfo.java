@@ -32,13 +32,16 @@ import ch.njol.util.coll.CollectionUtils;
 	"- integrity determines how damaged the building should look by randomly skipping blocks to place. " +
 			"This value can range from 0 to 1. With 0 removing all blocks and 1 spawning the structure in pristine condition.",
 	"- pallet index is what iteration of the structure to use, starting at 0, or -1 to pick a random palette. Useful for Minecraft structures.",
-	"- mirror the mirror setting for the structure on placement."
+	"- mirror the mirror setting for the structure on placement.",
+	"Default settings for settings are rotation = none, pallet = 0, mirror = none, entities = true, integrity = 1"
 })
 @Examples({
 	"place structure \"minecraft:end_city\" at player's location",
 		"\tset includes entities to false",
 		"\tset integrity to 0.9",
-		"\tset pallet to 2"
+		"\tset pallet to 2",
+		"\tset rotation to clockwise 90",
+		"\tset mirror to left to right"
 })
 @RequiredPlugins("Minecraft 1.17.1+")
 @Since("INSERT VERSION")
@@ -110,6 +113,8 @@ public class ExprStructureSectionInfo extends SimpleExpression<Object> {
 	}
 
 	public void change(Event event, @Nullable Object[] delta, ChangeMode mode) {
+		if (delta == null)
+			return;
 		if (!(event instanceof StructurePlaceEvent))
 			return;
 		StructurePlaceEvent details = (StructurePlaceEvent) event;
@@ -118,10 +123,13 @@ public class ExprStructureSectionInfo extends SimpleExpression<Object> {
 				details.setIncludesEntities((boolean) delta[0]);
 				break;
 			case INTEGRITY:
-				details.setIntegrity(((Number) delta[0]).floatValue());
+				float integrity = ((Number) delta[0]).floatValue();
+				details.setIntegrity(Math.min(1, Math.max(0, integrity)));
 				break;
 			case PALLET:
-				details.setPallet(((Number) delta[0]).intValue());
+				int pallet = ((Number) delta[0]).intValue();
+				int max = details.getStructure().getPaletteCount();
+				details.setPallet(Math.min(max, Math.max(-1, pallet)));
 				break;
 			case MIRROR:
 				details.setMirror((Mirror) delta[0]);
