@@ -21,6 +21,7 @@ package ch.njol.skript.conditions;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.event.Event;
+import org.bukkit.structure.StructureManager;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.Skript;
@@ -61,11 +62,12 @@ public class CondStructureExists extends Condition {
 
 	@Override
 	public boolean check(Event event) {
+		StructureManager manager = Bukkit.getStructureManager();
 		return names.check(event, name -> {
 			NamespacedKey key = Utils.getNamespacedKey(name);
 			if (key == null)
 				return false;
-			return Bukkit.getStructureManager().loadStructure(key, false) != null;
+			return manager.loadStructure(key, false) != null;
 		}, isNegated());
 	}
 
