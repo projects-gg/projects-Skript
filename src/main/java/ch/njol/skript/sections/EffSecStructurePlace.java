@@ -53,7 +53,7 @@ import ch.njol.util.Kleenean;
 	"For more info on the section settings see <a href='expressions.html#ExprStructureSectionInfo'>Structure Place Settings</a>"
 })
 @Examples({
-	"place structure \"minecraft:end_city\" at player's location without entities",
+	"place structure \"minecraft:end_city\" at player's location without entities:",
 		"\tset integrity to 0.9",
 		"\tset pallet to -1 # -1 for random pallet",
 		"\tset pallet to -1 # random pallet",

@@ -36,7 +36,7 @@ import ch.njol.util.coll.CollectionUtils;
 	"Default settings for settings are rotation = none, pallet = 0, mirror = none, entities = true, integrity = 1"
 })
 @Examples({
-	"place structure \"minecraft:end_city\" at player's location",
+	"place structure \"minecraft:end_city\" at player's location:",
 		"\tset includes entities to false",
 		"\tset integrity to 0.9",
 		"\tset pallet to 2",
