@@ -1962,7 +1962,6 @@ types:
 	resourcepackstate: resource pack state¦s @a
 	gene: panda gene¦s @a
 	gamerulevalue: gamerule value¦s @a
-	
 
 	# Hooks
 	money: money
