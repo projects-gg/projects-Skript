@@ -70,6 +70,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.Metadatable;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.structure.Structure;
 import org.bukkit.util.CachedServerIcon;
 import org.bukkit.util.Vector;
 import org.eclipse.jdt.annotation.Nullable;
@@ -101,6 +102,7 @@ import ch.njol.skript.util.EnumUtils;
 import ch.njol.skript.util.InventoryActions;
 import ch.njol.skript.util.PotionEffectUtils;
 import ch.njol.skript.util.StringMode;
+import ch.njol.skript.util.Utils;
 import ch.njol.util.StringUtils;
 import ch.njol.yggdrasil.Fields;
 
@@ -1844,5 +1846,35 @@ public class BukkitClasses {
 					}
 				})
 				.serializer(new EnumSerializer<>(Environment.class)));
+		if (Skript.classExists("org.bukkit.structure.Structure")) {
+			Classes.registerClass(new ClassInfo<>(Structure.class, "structure")
+					.user("structures?")
+					.name("Structure")
+					.description("Represents a structure in a namespace.")
+					.defaultExpression(new EventValueExpression<>(Structure.class))
+					.since("INSERT VERSION")
+					.parser(new Parser<Structure>() {
+						@Override
+						@Nullable
+						public Structure parse(String input, ParseContext context) {
+							return Bukkit.getStructureManager().loadStructure(Utils.getNamespacedKey(input), false);
+						}
+
+						@Override
+						public boolean canParse(ParseContext context) {
+							return context != ParseContext.CONFIG;
+						}
+
+						@Override
+						public String toString(Structure structure, int flags) {
+							return "Structure " + structure.toString();
+						}
+
+						@Override
+						public String toVariableNameString(Structure structure) {
+							return "Structure " + structure.toString();
+						}
+					}));
+		}
 	}
 }
