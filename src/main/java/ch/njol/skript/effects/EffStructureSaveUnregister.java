@@ -38,7 +38,7 @@ import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.util.Utils;
 import ch.njol.util.Kleenean;
 
-@Name("Structure Place Settings")
+@Name("Structure Save/Unregister")
 @Description("Unregisters or saves a structure by it's namespace key.")
 @Examples("unregister structure named \"Example\"")
 @RequiredPlugins("Minecraft 1.17.1+")
