@@ -152,7 +152,7 @@ public class EffSecStructurePlace extends EffectSection {
 			Runnable afterLoading = () -> delayed.set(!getParser().getHasDelayBefore().isFalse());
 			trigger = loadCode(sectionNode, "structure place", afterLoading, StructurePlaceEvent.class);
 			if (delayed.get()) {
-				Skript.error("Delays can't be used within a structure place event!");
+				Skript.error("Delays can't be used within a structure place section!");
 				return false;
 			}
 		}
