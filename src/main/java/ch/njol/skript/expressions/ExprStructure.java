@@ -29,7 +29,8 @@ import ch.njol.util.coll.CollectionUtils;
 })
 @Examples({
 	"set {_structure} to a new structure between {location1} and {location2} named \"Example\"",
-	"set {_structure} to structure \"Example\""
+	"set {_structure} to structure \"Example\"",
+	"set {_structure} to structure \"minecraft:end_city\""
 })
 @RequiredPlugins("Minecraft 1.17.1+")
 @Since("INSERT VERSION")
