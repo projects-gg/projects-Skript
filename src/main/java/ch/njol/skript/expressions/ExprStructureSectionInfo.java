@@ -44,16 +44,24 @@ import ch.njol.util.coll.CollectionUtils;
 
 @Name("Structure Place Settings")
 @Description({
-	"Returns or modifies the settings for placing of a structure.",
+	"Returns or modifies the settings for placement of a structure.",
 	"- includes entities will determine if the enitites saved should spawn when placing.",
 	"- rotation will allow placement of the structure based on the rotation at the location point.",
 	"- integrity determines how damaged the building should look by randomly skipping blocks to place. " +
-			"This value can range from 0 to 1. With 0 removing all blocks and 1 spawning the structure in pristine condition.",
-	"- pallet index is what iteration of the structure to use, starting at 0, or -1 to pick a random palette. Useful for Minecraft structures.",
+			"This value can range from decimal 0 to 1. With 0 removing all blocks and 1 spawning the structure in pristine condition.",
+	"- pallet index is what iteration of the structure to use, starting at 0, or -1 to pick a random palette. Useful for Minecraft structures." +
+			"If you registered your own structure through Skript, you can use 0 as it won't have multiple pallets, " +
+			"this is also the default value and this setting is not required in the section.",
 	"- mirror the mirror setting for the structure on placement.",
-	"Default settings for settings are rotation = none, pallet = 0, mirror = none, entities = true, integrity = 1"
+	"All setting syntaxes are optional and this doesn't even need to be a section, can be an effect. " +
+			"Default settings are rotation = none, pallet = 0, mirror = none, entities = true, integrity = 1",
+	"Note that some Minecraft structures have conditions that Mojang has defined, such as an ancient city will spawn near bedrock level."
 })
 @Examples({
+	"place structure \"Example\" at {_location}",
+	"place structure \"minecraft:ancient_city\" at {_location} without entities # Places near bedrock level",
+	"place structure \"minecraft:end_city\" at player's location:",
+		"\tset pallet to -1 # Will pick a random variation",
 	"place structure \"minecraft:end_city\" at player's location:",
 		"\tset includes entities to false",
 		"\tset integrity to 0.9",

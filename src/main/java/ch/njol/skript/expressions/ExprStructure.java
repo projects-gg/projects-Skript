@@ -42,8 +42,8 @@ import ch.njol.util.coll.CollectionUtils;
 @Name("Structures")
 @Description({
 	"A structure is a utility that allows you to save a cuboid of blocks and entities.",
-	"This syntax will returns an existing structure from memory or you can also create a structure between two locations.",
-	"If the name contains a collon, it'll grab from the Minecraft structure space.",
+	"This syntax will return an existing structure from memory/datapacks or you can also create a structure between two locations.",
+	"If the name contains a collon, it'll grab from the Minecraft structure space (Data packs included for namespaces).",
 })
 @Examples({
 	"set {_structure} to a new structure between {location1} and {location2} named \"Example\"",
@@ -85,7 +85,7 @@ public class ExprStructure extends SimpleExpression<Structure> {
 	protected Structure[] get(Event event) {
 		StructureManager manager = Bukkit.getStructureManager();
 
-		// Returning existing structure.
+		// Returning existing structures.
 		if (location1 == null || location2 == null) {
 			return names.stream(event)
 					.map(name -> Utils.getNamespacedKey(name))

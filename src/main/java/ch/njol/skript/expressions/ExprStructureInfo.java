@@ -57,7 +57,7 @@ public class ExprStructureInfo extends SimplePropertyExpression<Structure, Objec
 
 	static {
 		if (Skript.classExists("org.bukkit.structure.Structure"))
-			register(ExprStructureInfo.class, Object.class, "(:blocks|:entities|size:(size|vector))", "structures");
+			register(ExprStructureInfo.class, Object.class, "(:blocks|:entities|size:(size|[lowest] [block] vector))", "structures");
 	}
 
 	private enum Property {
