@@ -18,10 +18,13 @@
  */
 package ch.njol.skript.expressions;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.permissions.PermissionAttachment;
+import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.Skript;
@@ -37,8 +40,13 @@ import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
 
-@Name("All Permissions")
-@Description("All permissions of the provided permissible(s). A permissible is anything that can have permissions (like the player).")
+@Name("Permissions")
+@Description({
+	"All permissions of the provided permissible(s). A permissible is anything that can have permissions (like the player).",
+	"A couple of notes: Plugins like Skript cannot modify the default permissions such as bukkit.* permissions.",
+	"Skript also doesn't save the permissions after server restart.",
+	"You will need a permissions plugin or to save them yourself in variables."
+})
 @Examples("set {_permissions::*} to all permissions of the player")
 @Since("2.2-dev33, INSERT VERSION (Changers)")
 public class ExprPermissions extends SimpleExpression<String> {
@@ -49,9 +57,6 @@ public class ExprPermissions extends SimpleExpression<String> {
 			"[all [of] the] %entities%'[s] permissions"
 		);
 	}
-
-	// Metadata tag
-	private static final String PERMISSION_TAG = "skript-permissions";
 
 	private Expression<Entity> entities;
 
@@ -72,6 +77,50 @@ public class ExprPermissions extends SimpleExpression<String> {
 	}
 
 	@Override
+	public Class<?>[] acceptChange(ChangeMode mode) {
+		if (mode == ChangeMode.ADD || mode == ChangeMode.REMOVE || mode == ChangeMode.DELETE)
+			return CollectionUtils.array(String[].class);
+		return null;
+	}
+
+	@Override
+	public void change(Event event, @Nullable Object[] delta, ChangeMode mode) {
+		List<String> permissions = new ArrayList<>();
+		if (mode != ChangeMode.DELETE) {
+			if (delta == null)
+				return;
+			for (Object permission : delta) {
+				if (permission == null)
+					continue;
+				permissions.add((String) permission);
+			}
+		}
+		if (mode == ChangeMode.DELETE || mode == ChangeMode.REMOVE) {
+			for (Entity entity : entities.getAll(event)) {
+				for (PermissionAttachmentInfo info : entity.getEffectivePermissions()) {
+					PermissionAttachment attachment = info.getAttachment();
+					if (attachment == null)
+						continue;
+					for (String permission : attachment.getPermissions().keySet()) {
+						if (mode == ChangeMode.DELETE) {
+							attachment.unsetPermission(permission);
+							continue;
+						} else if (permissions.contains(permission)) {
+							attachment.unsetPermission(permission);
+						}
+					}
+				}
+			}
+			return;
+		}
+		for (Entity entity : entities.getAll(event)) {
+			PermissionAttachment attachment = getPermission(entity);
+			for (String permission : permissions)
+				attachment.setPermission(permission, true);
+		}
+	}
+
+	@Override
 	public boolean isSingle() {
 		return false;
 	}
@@ -86,27 +135,16 @@ public class ExprPermissions extends SimpleExpression<String> {
 		return "permissions of " + entities.toString(event, debug);
 	}
 
-	@Override
-	public Class<?>[] acceptChange(ChangeMode mode) {
-		if (mode == ChangeMode.ADD || mode == ChangeMode.REMOVE)
-			return CollectionUtils.array(String.class, String[].class);
-		return null;
-	}
-
-	@Override
-	public void change(Event event, @Nullable Object[] delta, ChangeMode mode) {
-		for (Entity entity : entities.getAll(event)) {
-			PermissionAttachment perm = getPermission(entity);
-			for (String string : (String[]) delta)
-				perm.setPermission(string, mode == ChangeMode.ADD);
-		}
-	}
-
 	private PermissionAttachment getPermission(Entity entity) {
 		Skript instance = Skript.getInstance();
-		if (!entity.hasMetadata(PERMISSION_TAG))
-			entity.setMetadata(PERMISSION_TAG, new FixedMetadataValue(instance, entity.addAttachment(instance)));
-		return (PermissionAttachment) entity.getMetadata(PERMISSION_TAG).get(0).value();
+		for (PermissionAttachmentInfo info : entity.getEffectivePermissions()) {
+			PermissionAttachment attachment = info.getAttachment();
+			if (attachment == null)
+				continue;
+			if (attachment.getPlugin().equals(instance))
+				return attachment;
+		}
+		return  entity.addAttachment(instance);
 	}
 
 }
