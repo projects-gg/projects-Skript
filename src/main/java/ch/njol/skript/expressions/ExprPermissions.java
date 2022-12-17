@@ -44,7 +44,10 @@ import ch.njol.util.coll.CollectionUtils;
 public class ExprPermissions extends SimpleExpression<String> {
 
 	static {
-		Skript.registerExpression(ExprPermissions.class, String.class, ExpressionType.PROPERTY, "[(all [[of] the]|the)] permissions (from|of) %entities%", "[(all [[of] the]|the)] %entities%'[s] permissions");
+		Skript.registerExpression(ExprPermissions.class, String.class, ExpressionType.PROPERTY,
+			"[all [[of] the]|the] permissions (from|of) %entities%",
+			"[all [of] the] %entities%'[s] permissions"
+		);
 	}
 
 	// Metadata tag
