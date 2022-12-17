@@ -139,7 +139,7 @@ public class ExprPermissions extends SimpleExpression<String> {
 	 * Grabs the Skript added PermissionAttachment.
 	 * 
 	 * @param entity The entity to grab the attachment from
-	 * @return PermissionAttachment with Skript has the plugin
+	 * @return PermissionAttachment with Skript as the plugin
 	 */
 	private PermissionAttachment getPermission(Entity entity) {
 		Skript instance = Skript.getInstance();
