@@ -83,7 +83,7 @@ public class ExprPermissions extends SimpleExpression<String> {
 
 	@Override
 	public String toString(@Nullable Event event, boolean debug) {
-		return "permissions " + " of " + entities.toString(event, debug);
+		return "permissions of " + entities.toString(event, debug);
 	}
 
 	@Override
