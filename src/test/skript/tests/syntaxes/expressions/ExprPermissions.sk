@@ -8,5 +8,5 @@ test "permissions":
 		remove "permission.test1" from permissions of event-entity
 		assert permissions of event-entity contains "permission.test" and "permission.test2" with "failed to remove permission"
 		clear permissions of event-entity
-		assert permissions of event-entity doesn't contain "permission.test", "permission.test1" and "permission.test2" with "permissions were not cleared %permissions of event-entity%"
+		assert permissions of event-entity doesn't contain "permission.test", "permission.test1" and "permission.test2" with "permissions were not cleared"
 		delete event-entity
