@@ -30,7 +30,6 @@ import ch.njol.skript.entity.EntityData;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
 
 public class EvtSpectate extends SkriptEvent {
@@ -39,26 +38,31 @@ public class EvtSpectate extends SkriptEvent {
 		if (Skript.classExists("com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent"))
 			Skript.registerEvent("Spectate", EvtSpectate.class, CollectionUtils.array(PlayerStartSpectatingEntityEvent.class, PlayerStopSpectatingEntityEvent.class),
 						"[player] stop spectating [(of|from) %-*entitydatas%]",
-						"[player] start spectating [of %-*entitydatas%]",
-						"[player] (swap|switch) spectating [(of|from) %-*entitydatas%]")
+						"[player] (swap|switch) spectating [(of|from) %-*entitydatas%]",
+						"[player] start spectating [of %-*entitydatas%]")
 					.description("Called with a player starts, stops or swaps spectating an entity.")
 					.examples("on player start spectating of a zombie:")
+					.requiredPlugins("Paper")
 					.since("INSERT VERSION");
 	}
 
 	private Literal<EntityData<?>> datas;
 
+	private static final int STOP = -1, SWAP = 0, START = 1;
+
 	/**
-	 * TRUE = swap. When the player did have a past spectating target.
+	 * 1 = swap. When the player did have a past spectating target.
+	 * 0 = start. When the player starts spectating a new target.
+	 * -1 = stop. When the player stops spectating a target.
 	 * UNKNOWN = start. When the player starts spectating a new target.
 	 * FALSE = stop. When the player stops spectating a target.
 	 */
-	private Kleenean pattern;
+	private int pattern;
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public boolean init(Literal<?>[] args, int matchedPattern, ParseResult parseResult) {
-		pattern = Kleenean.get(matchedPattern - 1);
+		pattern = matchedPattern - 1;
 		datas = (Literal<EntityData<?>>) args[0];
 		return true;
 	}
@@ -68,12 +72,12 @@ public class EvtSpectate extends SkriptEvent {
 		boolean swap = false;
 		Entity entity;
 		// Start or swap event, and must be PlayerStartSpectatingEntityEvent.
-		if (pattern != Kleenean.FALSE && event instanceof PlayerStartSpectatingEntityEvent) {
+		if (pattern != STOP && event instanceof PlayerStartSpectatingEntityEvent) {
 			PlayerStartSpectatingEntityEvent spectating = (PlayerStartSpectatingEntityEvent) event;
 			entity = spectating.getNewSpectatorTarget();
 
 			// If it's a swap event, we're checking for past target on entity data and no null targets in the event.
-			if (swap = pattern == Kleenean.TRUE && entity != null && spectating.getCurrentSpectatorTarget() != null)
+			if (swap = pattern == SWAP && entity != null && spectating.getCurrentSpectatorTarget() != null)
 				entity = spectating.getCurrentSpectatorTarget();
 		} else if (event instanceof PlayerStopSpectatingEntityEvent) {
 			entity = ((PlayerStopSpectatingEntityEvent) event).getSpectatorTarget();
@@ -82,7 +86,7 @@ public class EvtSpectate extends SkriptEvent {
 			return false;
 		}
 		// Wasn't a swap event.
-		if (pattern == Kleenean.TRUE && !swap)
+		if (pattern == SWAP && !swap)
 			return false;
 		if (datas == null)
 			return true;
@@ -95,7 +99,7 @@ public class EvtSpectate extends SkriptEvent {
 
 	@Override
 	public String toString(@Nullable Event event, boolean debug) {
-		return (pattern == Kleenean.UNKNOWN ? "start" : pattern == Kleenean.TRUE ? "swap" : "stop") + " spectating"
+		return (pattern == START ? "start" : pattern == SWAP ? "swap" : "stop") + " spectating"
 				+ datas != null ? "of " + datas.toString(event, debug) : "";
 	}
 

@@ -157,6 +157,13 @@ public class ExprSpectatorTarget extends SimpleExpression<Entity> {
 	}
 
 	@Override
+	public boolean isSingle() {
+		if (players == null)
+			return true;
+		return players.isSingle();
+	}
+
+	@Override
 	public Class<? extends Entity> getReturnType() {
 		return Entity.class;
 	}
@@ -164,13 +171,6 @@ public class ExprSpectatorTarget extends SimpleExpression<Entity> {
 	@Override
 	public String toString(@Nullable Event event, boolean debug) {
 		return "spectator target" + (players != null ? " of " + players.toString(event, debug) : "");
-	}
-
-	@Override
-	public boolean isSingle() {
-		if (players == null)
-			return true;
-		return players.isSingle();
 	}
 
 }
