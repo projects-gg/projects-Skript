@@ -38,7 +38,7 @@ import ch.njol.util.Kleenean;
 import ch.njol.util.coll.CollectionUtils;
 
 @Name("All Permissions")
-@Description("Returns all permissions of the defined permissible(s). A permissible is an object like an entity that can have permissions.")
+@Description("All permissions of the provided permissible(s). A permissible is anything that can have permissions (like the player).")
 @Examples("set {_permissions::*} to all permissions of the player")
 @Since("2.2-dev33, INSERT VERSION (Changers)")
 public class ExprPermissions extends SimpleExpression<String> {
