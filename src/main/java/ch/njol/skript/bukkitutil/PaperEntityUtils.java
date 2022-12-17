@@ -43,6 +43,16 @@ public class PaperEntityUtils {
 	private static final boolean LOOK_AT = Skript.methodExists(Mob.class, "lookAt", Entity.class);
 
 	/**
+	 * Utility method for usage only from this class.
+	 */
+	private static void mobLookAt(Object target, @Nullable Float headRotationSpeed, @Nullable Float maxHeadPitch, Mob mob) {
+		Bukkit.getMobGoals().getRunningGoals(mob, GoalType.LOOK).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
+		float speed = headRotationSpeed != null ? headRotationSpeed : mob.getHeadRotationSpeed();
+		float maxPitch = maxHeadPitch != null ? maxHeadPitch : mob.getMaxHeadPitch();
+		Bukkit.getMobGoals().addGoal(mob, 0, new LookGoal(target, mob, speed, maxPitch));
+	}
+
+	/**
 	 * Instruct a Mob (1.17+) to look at a specific vector/location/entity.
 	 * Object can be a {@link org.bukkit.util.Vector}, {@link org.bukkit.Location} or {@link org.bukkit.entity.Entity}
 	 * 
@@ -73,18 +83,14 @@ public class PaperEntityUtils {
 		for (LivingEntity entity : entities) {
 			if (!(entity instanceof Mob))
 				continue;
-			Mob mob = (Mob) entity;
-			Bukkit.getMobGoals().getRunningGoals(mob, GoalType.LOOK).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
-			float speed = headRotationSpeed != null ? headRotationSpeed : mob.getHeadRotationSpeed();
-			float maxPitch = maxHeadPitch != null ? maxHeadPitch : mob.getMaxHeadPitch();
-			Bukkit.getMobGoals().addGoal(mob, 0, new LookGoal(target, mob, speed, maxPitch));
+			mobLookAt(target, headRotationSpeed, maxHeadPitch, (Mob) entity);
 		}
 	}
 
 	/**
 	 * Instruct a Mob (1.17+) or Players (1.19.1+) to look at a specific vector/location/entity.
 	 * Object can be a {@link org.bukkit.util.Vector}, {@link org.bukkit.Location} or {@link org.bukkit.entity.Entity}
-	 * THIS METHOD IS FOR 1.19.1+ ONLY. Use {@link} otherwise.
+	 * THIS METHOD IS FOR 1.19.1+ ONLY. Use {@link lookAt(Object, Float, Float, LivingEntity...)} otherwise.
 	 * 
 	 * @param entityAnchor What part of the entity the player should face assuming the LivingEntity argument contains a player. Only for players.
 	 * @param target The vector/location/entity to make the livingentity or player look at.
@@ -110,16 +116,15 @@ public class PaperEntityUtils {
 					player.lookAt((Entity) target, LookAnchor.FEET, entityAnchor);
 				}
 			} else if (entity instanceof Mob) {
-				Mob mob = (Mob) entity;
-				Bukkit.getMobGoals().getRunningGoals(mob, GoalType.LOOK).forEach(goal -> Bukkit.getMobGoals().removeGoal(mob, goal));
-				float speed = headRotationSpeed != null ? headRotationSpeed : mob.getHeadRotationSpeed();
-				float maxPitch = maxHeadPitch != null ? maxHeadPitch : mob.getMaxHeadPitch();
-				Bukkit.getMobGoals().addGoal(mob, 0, new LookGoal(target, mob, speed, maxPitch));
+				mobLookAt(target, headRotationSpeed, maxHeadPitch, (Mob) entity);
 			}
 		}
 	}
 
 	public static class LookGoal implements Goal<Mob> {
+
+		private static final GoalKey<Mob> SKRIPT_LOOK_KEY = GoalKey.of(Mob.class, new NamespacedKey(Skript.getInstance(), "skript_entity_look"));
+		private static final EnumSet<GoalType> LOOK_GOAL = EnumSet.of(GoalType.LOOK);
 
 		private final float speed, maxPitch;
 		private final Object target;
@@ -153,12 +158,12 @@ public class PaperEntityUtils {
 
 		@Override
 		public GoalKey<Mob> getKey() {
-			return GoalKey.of(Mob.class, new NamespacedKey(Skript.getInstance(), "skript_entity_look"));
+			return SKRIPT_LOOK_KEY;
 		}
 
 		@Override
 		public EnumSet<GoalType> getTypes() {
-			return EnumSet.of(GoalType.LOOK);
+			return LOOK_GOAL;
 		}
 
 	}
