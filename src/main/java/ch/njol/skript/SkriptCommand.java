@@ -41,7 +41,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
-import org.eclipse.jdt.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.skriptlang.skript.lang.script.Script;
 
 import java.io.File;
@@ -200,7 +200,11 @@ public class SkriptCommand implements CommandExecutor {
 								if (scriptInfo.files == 0) {
 									info(sender, "reload.empty folder", fileName);
 								} else {
-									reloaded(sender, logHandler, timingLogHandler, "x scripts in folder", fileName, scriptInfo.files);
+									if (logHandler.numErrors() == 0) {
+										reloaded(sender, logHandler, timingLogHandler, "x scripts in folder success", fileName, scriptInfo.files);
+									} else {
+										reloaded(sender, logHandler, timingLogHandler, "x scripts in folder error", fileName, scriptInfo.files);
+									}
 								}
 							});
 					}
