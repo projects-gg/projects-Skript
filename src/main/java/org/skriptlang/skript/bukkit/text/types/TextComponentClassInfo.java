@@ -50,7 +50,7 @@ public final class TextComponentClassInfo extends ClassInfo<Component> {
 
 		@Override
 		public String toVariableNameString(Component component) {
-			return "textcomponent:" + component.hashCode();
+			return org.skriptlang.skript.bukkit.text.TextComponentParser.instance().stripFormatting(component);
 		}
 
 	}

@@ -7,8 +7,11 @@ import ch.njol.skript.util.PaperUtils;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
+import org.bukkit.World;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.Nullable;
@@ -114,6 +117,34 @@ public class BukkitUtils {
 			return new RegistryClassInfo<>(registryClass, registry, codeName, languageNode);
 		}
 		Skript.debug("There were no registries found for '" + registryName + "'.");
+		return null;
+	}
+
+	/**
+	 * Resolves a world by its name, falling back to its {@link NamespacedKey}.
+	 * <p>
+	 * This allows referencing worlds that are registered under a namespace
+	 * (e.g. {@code "minecraft:overworld"} or {@code "worlds:spawn"}) in addition
+	 * to their Bukkit name (e.g. {@code "world"} or {@code "worlds_spawn"}). Some
+	 * multi-world managers register dimensions whose name differs from the legacy
+	 * Bukkit name, leaving them only addressable through their key.
+	 *
+	 * @param name The world name or namespaced key (as a string).
+	 * @return The matching {@link World}, or {@code null} if none was found.
+	 */
+	public static @Nullable World getWorld(@Nullable String name) {
+		if (name == null)
+			return null;
+		World world = Bukkit.getWorld(name);
+		if (world != null)
+			return world;
+		NamespacedKey key = NamespacedKey.fromString(name);
+		if (key != null) {
+			for (World candidate : Bukkit.getWorlds()) {
+				if (key.equals(candidate.getKey()))
+					return candidate;
+			}
+		}
 		return null;
 	}
 

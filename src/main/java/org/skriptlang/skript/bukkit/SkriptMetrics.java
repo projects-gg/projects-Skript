@@ -108,9 +108,6 @@ public class SkriptMetrics {
 		metrics.addCustomChart(new SimplePie("playerVariableFix", () ->
 			SkriptConfig.enablePlayerVariableFix.value().toString()
 		));
-		metrics.addCustomChart(new SimplePie("uuidsWithPlayers", () ->
-			SkriptConfig.usePlayerUUIDsInVariableNames.value().toString()
-		));
 
 		metrics.addCustomChart(new DrilldownPie("drilldownDateFormat", () -> {
 			String value = ((SimpleDateFormat) SkriptConfig.dateFormat.value()).toPattern();

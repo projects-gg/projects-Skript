@@ -7,6 +7,7 @@ import ch.njol.skript.util.LiteralUtils;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.skriptlang.skript.lang.converter.Converters;
 import org.skriptlang.skript.lang.properties.handlers.base.PropertyHandler;
 
 import java.util.ArrayList;
@@ -74,15 +75,43 @@ public interface PropertyBaseSyntax<Handler extends PropertyHandler<?>> {
 			return null; // no expression to convert
 		}
 
+		Expression<?> defendedExpression = LiteralUtils.defendExpression(expr);
+
 		// get all types with a name property
 		Set<ClassInfo<?>> classInfos = Classes.getClassInfosByProperty(property);
-		Class<?>[] classes = classInfos.stream().map(ClassInfo::getC).toArray(Class[]::new);
+		Class<?>[] sourceTypes = defendedExpression.possibleReturnTypes();
+		Class<?>[] classes = classInfos.stream()
+			.map(ClassInfo::getC)
+			.sorted((first, second) -> {
+				int priority = Integer.compare(
+					conversionPriority(sourceTypes, first),
+					conversionPriority(sourceTypes, second)
+				);
+				if (priority != 0)
+					return priority;
+				return first.getName().compareTo(second.getName());
+			})
+			.toArray(Class[]::new);
 
 		if (classes.length == 0)
 			return null;
 
 		//noinspection unchecked,rawtypes
-		return LiteralUtils.defendExpression(expr).getConvertedExpression((Class[]) classes);
+		return defendedExpression.getConvertedExpression((Class[]) classes);
+	}
+
+	private static int conversionPriority(Class<?>[] sourceTypes, Class<?> targetType) {
+		int priority = Integer.MAX_VALUE;
+		for (Class<?> sourceType : sourceTypes) {
+			if (targetType.isAssignableFrom(sourceType)) {
+				return 0;
+			} else if (Converters.exactConverterExists(sourceType, targetType)) {
+				priority = Math.min(priority, 1);
+			} else if (Converters.converterExists(sourceType, targetType)) {
+				priority = Math.min(priority, 2);
+			}
+		}
+		return priority;
 	}
 
 	/**

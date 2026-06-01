@@ -69,10 +69,7 @@ public class OfflinePlayerClassInfo extends ClassInfo<OfflinePlayer> {
 
 		@Override
 		public String toVariableNameString(OfflinePlayer p) {
-			if (SkriptConfig.usePlayerUUIDsInVariableNames.value() || p.getName() == null)
-				return p.getUniqueId().toString();
-			else
-				return p.getName();
+			return p.getName();
 		}
 
 		@Override

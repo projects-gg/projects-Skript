@@ -20,7 +20,12 @@ allprojects {
 		maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
 		maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
 		maven { url 'https://repo.papermc.io/repository/maven-public/' }
-		maven { url 'https://ci.emc.gs/nexus/content/groups/aikar/' }
+		maven {
+			url 'https://repo.aikar.co/nexus/content/groups/aikar/'
+			content {
+				excludeGroup 'io.papermc.paper'
+			}
+		}
 	}
 }
 

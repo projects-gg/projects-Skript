@@ -8,9 +8,9 @@ import ch.njol.skript.doc.Since;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.ExpressionType;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
+import ch.njol.skript.bukkitutil.BukkitUtils;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.util.Kleenean;
-import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +42,7 @@ public class ExprWorldFromName extends SimpleExpression<World> {
 		String worldName = this.worldName.getSingle(e);
 		if (worldName == null)
 			return null;
-		World world = Bukkit.getWorld(worldName);
+		World world = BukkitUtils.getWorld(worldName);
 		if (world == null)
 			return null;
 

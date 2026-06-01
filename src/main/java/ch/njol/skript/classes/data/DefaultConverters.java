@@ -3,6 +3,7 @@ package ch.njol.skript.classes.data;
 import ch.njol.skript.Skript;
 import ch.njol.skript.SkriptConfig;
 import ch.njol.skript.aliases.ItemType;
+import ch.njol.skript.bukkitutil.BukkitUtils;
 import ch.njol.skript.bukkitutil.EntityUtils;
 import ch.njol.skript.command.Commands;
 import ch.njol.skript.config.Config;
@@ -313,7 +314,7 @@ public class DefaultConverters {
 		// EnchantmentOffer - EnchantmentType
 		Converters.registerConverter(EnchantmentOffer.class, EnchantmentType.class, eo -> new EnchantmentType(eo.getEnchantment(), eo.getEnchantmentLevel()));
 
-		Converters.registerConverter(String.class, World.class, Bukkit::getWorld);
+		Converters.registerConverter(String.class, World.class, BukkitUtils::getWorld);
 
 		if (Skript.classExists("org.bukkit.entity.EntitySnapshot"))
 			Converters.registerConverter(EntitySnapshot.class, EntityData.class, snapshot -> EntityUtils.toSkriptEntityData(snapshot.getEntityType()));

@@ -4,7 +4,7 @@
 version: @version@
 
 # What null (nothing) should show up as in a string/text
-none: <none>
+none: Bilinmiyor
 
 # -- Skript --
 skript:
@@ -17,7 +17,7 @@ skript:
 	no errors: All scripts loaded without errors.
 	scripts loaded: Loaded %s script¦¦s¦ with a total of %s structure¦¦s¦ in %s
 	finished loading: Finished loading.
-	warning message: It appears that /reload or another plugin reloaded Skript. This is not supported behaviour and may cause issues.
+	warning message: It appears that /reload or another plugin reloaded Skript. Thais is not supported behaviour and may cause issues.
 	restart message: Please consider restarting the server instead.
 
 # -- Skript command --
@@ -176,16 +176,16 @@ updater:
 
 # -- Commands --
 commands:
-	no permission message: You don't have the required permission to use this command
-	cooldown message: You are using this command too often, please try again later
-	executable by players: This command can only be used by players
-	executable by console: This command can only be used by the console
-	correct usage: Correct usage:
-	invalid argument: Invalid argument <gray>'%s<gray>'<reset>. Allowed are:
-	too many arguments: This command can only accept a single %2$s.
-	internal error: An internal error occurred while attempting to perform this command.
-	no player starts with: There is no player online whose name starts with '%s'
-	multiple players start with: There are several players online whose names start with '%s'
+	no permission message: §cBu komutu kullanabilmek için gerekli izniniz yok.
+	cooldown message: §cKomutları çok sık kullandınız. Daha sonra tekrar deneyin.
+	executable by players: §cBu komut sadece oyuncu tarafından çalıştırılabilir.
+	executable by console: §cBu komut sadece PROJECTS konsolunda çalıştırılabilir.
+	correct usage: §cDoğru kullanım
+	invalid argument: §7'%s'§c kullanılamıyor.
+	too many arguments: §cBu komut sadece şu şekilde kabul edilir, %2$s.
+	internal error: §cKomutu kullanmaya çalışırken bir hata oluştu.
+	no player starts with: §7%s §cadında çevrimiçi oyuncu bulunamadı.
+	multiple players start with: §7%s §cadıyla başlayan birden fazla oyuncu var.
 
 # -- Hooks --
 hooks:

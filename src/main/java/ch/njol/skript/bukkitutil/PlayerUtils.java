@@ -35,10 +35,12 @@ public abstract class PlayerUtils {
 		new Task(Skript.getInstance(), 1, 1) {
 			@Override
 			public void run() {
-				for (Player p : inventoryUpdateList)
-					p.updateInventory();
+				synchronized (inventoryUpdateList) {
+					for (Player p : inventoryUpdateList)
+						p.updateInventory();
 
-				inventoryUpdateList.clear();
+					inventoryUpdateList.clear();
+				}
 			}
 		};
 	}

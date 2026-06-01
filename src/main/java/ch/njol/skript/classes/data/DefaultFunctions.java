@@ -1,6 +1,7 @@
 package ch.njol.skript.classes.data;
 
 import ch.njol.skript.Skript;
+import ch.njol.skript.bukkitutil.BukkitUtils;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.KeyedValue;
 import ch.njol.skript.lang.function.Functions;
@@ -437,7 +438,7 @@ public class DefaultFunctions {
 		}, DefaultClasses.WORLD, true) {
 			@Override
 			public World[] executeSimple(Object[][] params) {
-				World w = Bukkit.getWorld((String) params[0][0]);
+				World w = BukkitUtils.getWorld((String) params[0][0]);
 				return w == null ? new World[0] : new World[] {w};
 			}
 		}).description("Gets a world from its name.")

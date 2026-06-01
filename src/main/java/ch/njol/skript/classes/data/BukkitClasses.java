@@ -168,10 +168,10 @@ public class BukkitClasses {
 					public World parse(final String s, final ParseContext context) {
 						// REMIND allow shortcuts '[over]world', 'nether' and '[the_]end' (server.properties: 'level-name=world') // inconsistent with 'world is "..."'
 						if (context == ParseContext.COMMAND || context == ParseContext.PARSE || context == ParseContext.CONFIG)
-							return Bukkit.getWorld(s);
+							return BukkitUtils.getWorld(s);
 						final Matcher m = parsePattern.matcher(s);
 						if (m.matches())
-							return Bukkit.getWorld(m.group(1));
+							return BukkitUtils.getWorld(m.group(1));
 						return null;
 					}
 
@@ -199,7 +199,7 @@ public class BukkitClasses {
 					protected World deserialize(Fields fields) throws StreamCorruptedException {
 						String name = fields.getObject("name", String.class);
 						assert name != null;
-						World world = Bukkit.getWorld(name);
+						World world = BukkitUtils.getWorld(name);
 						if (world == null)
 							throw new StreamCorruptedException("Missing world " + name);
 						return world;
@@ -209,7 +209,7 @@ public class BukkitClasses {
 					@Override
 					@Nullable
 					public World deserialize(final String s) {
-						return Bukkit.getWorld(s);
+						return BukkitUtils.getWorld(s);
 					}
 
 					@Override

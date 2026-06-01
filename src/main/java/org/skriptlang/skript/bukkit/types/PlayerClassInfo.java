@@ -137,10 +137,7 @@ public class PlayerClassInfo extends ClassInfo<Player> {
 
 		@Override
 		public String toVariableNameString(Player player) {
-			if (SkriptConfig.usePlayerUUIDsInVariableNames.value())
-				return player.getUniqueId().toString();
-			else
-				return player.getName();
+			return player.getName();
 		}
 
 		@Override
