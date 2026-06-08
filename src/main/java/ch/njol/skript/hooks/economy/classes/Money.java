@@ -75,7 +75,22 @@ public class Money {
 				return true;
 			}
 		});
-		
+
+		// Money is interchangeable with numbers (see the Money <-> Number comparator and Money -> Double converter),
+		// so a type check like 'money is a number' must be true. Registering an exact Money <-> ClassInfo comparator
+		// overrides the generic Object <-> ClassInfo comparator (which only does an isInstance check) for money.
+		Comparators.registerComparator(Money.class, ClassInfo.class, new Comparator<Money, ClassInfo>() {
+			@Override
+			public Relation compare(final Money money, final ClassInfo c) {
+				return Relation.get(c.getC().isInstance(money) || c.getC().isAssignableFrom(Number.class));
+			}
+
+			@Override
+			public boolean supportsOrdering() {
+				return false;
+			}
+		});
+
 		Converters.registerConverter(Money.class, Double.class, new Converter<Money, Double>() {
 			@Override
 			public Double convert(final Money m) {

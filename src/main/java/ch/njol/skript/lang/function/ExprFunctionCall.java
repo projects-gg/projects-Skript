@@ -60,8 +60,17 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> implements KeyProvi
 			values = (Object[]) execute;
 		}
 
-		String[] keys = reference.function().returnedKeys();
-		reference.function().resetReturnValue();
+		var function = reference.function();
+		if (function == null) {
+			// Function could not be resolved (defining script failed to load or was
+			// unloaded). execute() already reported the error above; avoid a hard NPE
+			// here and return no values, mirroring the empty-result path below.
+			cache.put(event, new String[0]);
+			//noinspection unchecked
+			return (T[]) Array.newInstance(returnType, 0);
+		}
+		String[] keys = function.returnedKeys();
+		function.resetReturnValue();
 
 		//noinspection unchecked
 		T[] convertedValues = (T[]) Array.newInstance(returnType, values != null ? values.length : 0);

@@ -51,7 +51,7 @@ public class PropCondContains extends Condition implements PropertyBaseSyntax<Co
 		registry.register(SyntaxRegistry.CONDITION, SyntaxInfo.builder(PropCondContains.class)
 			.addPatterns(
 				"%objects% contain[1:s] %objects%",
-				"%objects% (1:doesn't|1:does not|do not|don't) contain %objects%",
+				"%objects% (1:doesn't|1:does not|1:do not|1:don't) contain %objects%",
 				"contents of %objects% contain %objects%",
 				"contents of %objects% (do not|don't) contain %objects%",
 				"%inventories% (has|have) %itemtypes% [in [(the[ir]|his|her|its)] inventory]",

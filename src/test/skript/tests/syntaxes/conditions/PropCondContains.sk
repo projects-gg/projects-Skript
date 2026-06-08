@@ -1,2 +1,7 @@
 test "PropCondContains conversion":
 	assert "%uuid of world "world"%" contains uuid of world "world" with "failed to convert uuid to string for contains"
+
+test "PropCondContains list negation":
+	set {_values::*} to "abc" and "def"
+	assert {_values::*} don't contain "ab" with "list variable 'don't contain' used containment instead of direct comparison"
+	assert {_values::*} do not contain "bc" with "list variable 'do not contain' used containment instead of direct comparison"
