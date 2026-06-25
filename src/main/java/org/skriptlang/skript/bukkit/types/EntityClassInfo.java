@@ -175,7 +175,13 @@ public class EntityClassInfo extends ClassInfo<Entity> {
 			if (isDisplayName) {
 				return entity.customName();
 			}
-			return entity.name();
+			// A player's name is always their username.
+			if (entity instanceof Player player)
+				return player.name();
+			// Other entities only expose their custom name (Adventure component, null when unset). We do
+			// not fall back to entity.name(), so an unnamed mob reports no name instead of its type name
+			// (e.g. "Zombie"). Players are handled above so they keep returning their username.
+			return entity.customName();
 		}
 
 		@Override
