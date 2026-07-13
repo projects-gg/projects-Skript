@@ -750,13 +750,17 @@ public class Variables {
 			if (change == null)
 				break;
 
-			// Set and save variable
-			variables.setVariable(change.name, change.value);
-			saveVariableChange(change.name, change.value);
-
-			// Drop the index entry only if it still refers to the change just applied;
-			// a newer queued change for the same name must stay visible to readers.
-			queuedChanges.remove(change.name, change);
+			try {
+				// Set and save variable
+				variables.setVariable(change.name, change.value);
+				saveVariableChange(change.name, change.value);
+			} finally {
+				// This must run even if saving threw: a leftover index entry would make every
+				// later read of this name return this change's value and shadow the map for good.
+				// Only drop it if it still refers to the change just applied, so that a newer
+				// queued change for the same name stays visible to readers.
+				queuedChanges.remove(change.name, change);
+			}
 		}
 	}
 
