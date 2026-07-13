@@ -334,8 +334,18 @@ public class Variables {
 
 	/**
 	 * A lock for reading and writing variables.
+	 * <p>
+	 * Deliberately <b>not</b> fair. Global variable reads happen many thousands of times per tick,
+	 * and a fair lock makes every reader queue behind any already-waiting thread, so each read
+	 * becomes a park/unpark pair instead of an uncontended CAS. Under Skript's read rate the queue
+	 * never drains and the convoy sustains itself, which parks the server thread indefinitely.
+	 * <p>
+	 * Readers cannot starve a writer here: global writes go through
+	 * {@link #setVariable(String, Object)}, which uses a barging {@code tryLock} (unaffected by the
+	 * fairness policy) and falls back to {@link #changeQueue}. The only blocking write lock
+	 * acquisitions happen while loading and while shutting down, when nothing is reading.
 	 */
-	static final ReadWriteLock variablesLock = new ReentrantReadWriteLock(true);
+	static final ReadWriteLock variablesLock = new ReentrantReadWriteLock(false);
 
 	/**
 	 * The {@link VariablesMap} storing global variables,
@@ -423,7 +433,11 @@ public class Variables {
 		if (from == null)
 			return null;
 
-		return from.copy();
+		// copy() iterates the backing TreeMap, which must not run concurrently with a
+		// write from another thread (async sections). Synchronize on the per-event map.
+		synchronized (from) {
+			return from.copy();
+		}
 	}
 
 	/**
@@ -470,19 +484,21 @@ public class Variables {
 			if (map == null)
 				return null;
 
-			return map.getVariable(n);
+			// Per-event local variable maps are not thread-safe. An async section
+			// (e.g. skript-reflect) may access the same event's variables concurrently
+			// with the main thread. Synchronize on the per-event map to avoid corrupting
+			// its backing TreeMap (which otherwise spins forever in TreeMap.getEntry).
+			synchronized (map) {
+				return map.getVariable(n);
+			}
 		} else {
+			variablesLock.readLock().lock();
 			try {
-				variablesLock.readLock().lock();
-				// Prevent race conditions from returning variables with incorrect values
-				if (!changeQueue.isEmpty()) {
-					// Gets the last VariableChange made
-					VariableChange variableChange = changeQueue.stream()
-							.filter(change -> change.name.equals(n))
-							.reduce((first, second) -> second)
-									// Gets last value, as iteration is from head to tail,
-									//  and adding occurs at the tail (and we want the most recently added)
-							.orElse(null);
+				// Prevent race conditions from returning variables with incorrect values.
+				// queuedChanges always holds the most recently queued change per name, so this
+				// resolves in constant time rather than scanning the whole queue on every read.
+				if (!queuedChanges.isEmpty()) {
+					VariableChange variableChange = queuedChanges.get(n);
 
 					if (variableChange != null) {
 						return variableChange.value;
@@ -508,15 +524,22 @@ public class Variables {
 	 */
 	public static Iterator<Pair<String, Object>> getVariableIterator(String name, boolean local, @Nullable Event event) {
 		assert name.endsWith("*");
-		Object val = getVariable(name, event, local);
 		String subName = StringUtils.substring(name, 0, -1);
 
-		if (val == null)
+		// Snapshot the list variable's keys. For local variables this must be done while
+		// holding the per-event map's monitor, otherwise a concurrent write from an async
+		// section (skript-reflect) can corrupt the backing TreeMap mid-copy.
+		VariablesMap localMap = (local && event != null) ? localVariables.get(event) : null;
+		Iterator<String> keys;
+		if (localMap != null) {
+			synchronized (localMap) {
+				keys = snapshotListKeys(name, event, local);
+			}
+		} else {
+			keys = snapshotListKeys(name, event, local);
+		}
+		if (keys == null)
 			return new EmptyIterator<>();
-		assert val instanceof TreeMap;
-		// temporary list to prevent CMEs
-		@SuppressWarnings("unchecked")
-		Iterator<String> keys = new ArrayList<>(((Map<String, Object>) val).keySet()).iterator();
 		return new Iterator<>() {
 			@Nullable
 			private String key;
@@ -555,6 +578,23 @@ public class Variables {
 				Variables.deleteVariable(key, event, local);
 			}
 		};
+	}
+
+	/**
+	 * Snapshots the keys of a list variable into a detached iterator.
+	 * <p>
+	 * Callers that operate on a local variable must hold the per-event
+	 * {@link VariablesMap} monitor while calling this, so the snapshot cannot
+	 * race with a concurrent write from another thread.
+	 */
+	@SuppressWarnings("unchecked")
+	private static @Nullable Iterator<String> snapshotListKeys(String name, @Nullable Event event, boolean local) {
+		Object val = getVariable(name, event, local);
+		if (val == null)
+			return null;
+		assert val instanceof TreeMap;
+		// temporary list to prevent CMEs
+		return new ArrayList<>(((Map<String, Object>) val).keySet()).iterator();
 	}
 
 	/**
@@ -604,7 +644,13 @@ public class Variables {
 
 			// Get the variables map and set the variable in it
 			VariablesMap map = localVariables.computeIfAbsent(event, e -> new VariablesMap());
-			map.setVariable(name, value);
+			// Per-event local variable maps are not thread-safe. An async section
+			// (e.g. skript-reflect) may mutate the same event's variables concurrently
+			// with the main thread. Synchronize on the per-event map to avoid corrupting
+			// its backing TreeMap (which otherwise spins forever in TreeMap.getEntry).
+			synchronized (map) {
+				map.setVariable(name, value);
+			}
 		} else {
 			setVariable(name, value);
 		}
@@ -638,6 +684,15 @@ public class Variables {
 	 * Changes to variables that have not yet been performed.
 	 */
 	static final Queue<VariableChange> changeQueue = new ConcurrentLinkedQueue<>();
+
+	/**
+	 * An index over {@link #changeQueue}, mapping a variable name to the most recently queued
+	 * change for it. Lets {@link #getVariable(String, Event, boolean)} resolve a pending change
+	 * in constant time; scanning the queue itself is O(queue size) on every single read, which
+	 * collapses once a long-running read lock holder (such as a full CSV rewrite) forces every
+	 * write to be queued.
+	 */
+	private static final Map<String, VariableChange> queuedChanges = new ConcurrentHashMap<>();
 
 	/**
 	 * A variable change name-value pair.
@@ -676,7 +731,11 @@ public class Variables {
 	 * @param value the new value.
 	 */
 	private static void queueVariableChange(String name, @Nullable Object value) {
-		changeQueue.add(new VariableChange(name, value));
+		VariableChange change = new VariableChange(name, value);
+		// The index must be populated before the queue, so that a change polled by
+		// processChangeQueue is always still present in the index and can be removed again.
+		queuedChanges.put(name, change);
+		changeQueue.add(change);
 	}
 
 	/**
@@ -694,6 +753,10 @@ public class Variables {
 			// Set and save variable
 			variables.setVariable(change.name, change.value);
 			saveVariableChange(change.name, change.value);
+
+			// Drop the index entry only if it still refers to the change just applied;
+			// a newer queued change for the same name must stay visible to readers.
+			queuedChanges.remove(change.name, change);
 		}
 	}
 
