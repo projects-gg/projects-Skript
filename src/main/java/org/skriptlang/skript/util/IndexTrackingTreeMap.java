@@ -20,7 +20,11 @@ public class IndexTrackingTreeMap<V> extends TreeMap<String, V> {
 
 	private final Set<String> mapIndices = new HashSet<>();
 
-	private final Set<Integer> numericalIndices = new HashSet<>();
+	// NavigableSet so that recomputeMaxIndex() is O(log n) via last(). With a HashSet it
+	// walked DOWN one integer at a time through absent indices; removing a huge numeric
+	// index (e.g. an epoch-seconds key) scanned billions of integers under the global
+	// variables write lock, parking every reader (observed as 700-1400ms tick spikes).
+	private final NavigableSet<Integer> numericalIndices = new TreeSet<>();
 	private int nextIndex = 1;
 	private int maxIndex = -1;
 
@@ -149,8 +153,7 @@ public class IndexTrackingTreeMap<V> extends TreeMap<String, V> {
 	}
 
 	private void recomputeMaxIndex() {
-		while (maxIndex >= 0 && !numericalIndices.contains(maxIndex))
-			maxIndex--;
+		maxIndex = numericalIndices.isEmpty() ? -1 : numericalIndices.last();
 	}
 
 	private int parsePositiveInt(String string) {

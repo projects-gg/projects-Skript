@@ -48,14 +48,17 @@ public class FlatFileStorage extends VariablesStorage {
 	public static final Charset FILE_CHARSET = StandardCharsets.UTF_8;
 
 	/**
-	 * The delay for the save task.
+	 * The delay for the save task, in ticks. Defaults to 5 minutes; can be
+	 * overridden with the {@code skript.csvSavePeriodTicks} system property
+	 * (e.g. {@code -Dskript.csvSavePeriodTicks=600} for tests).
 	 */
-	private static final long SAVE_TASK_DELAY = 5 * 60 * 20;
+	private static final long SAVE_TASK_DELAY = Long.getLong("skript.csvSavePeriodTicks", 5 * 60 * 20);
 
 	/**
 	 * The period for the save task, how long (in ticks) between each save.
+	 * Same default and override as {@link #SAVE_TASK_DELAY}.
 	 */
-	private static final long SAVE_TASK_PERIOD = 5 * 60 * 20;
+	private static final long SAVE_TASK_PERIOD = Long.getLong("skript.csvSavePeriodTicks", 5 * 60 * 20);
 
 	/**
 	 * A reference to the {@link PrintWriter} that is used to write
@@ -369,10 +372,19 @@ public class FlatFileStorage extends VariablesStorage {
 				backupTask.cancel();
 		}
 
+		// Snapshot the variables tree under the read lock, then serialize and write
+		// to disk WITHOUT the lock. Holding the read lock for the whole rewrite
+		// forced every write into the change queue for seconds; the accumulated
+		// backlog then drained in one long write lock hold (tick spike source).
+		TreeMap<String, Object> snapshot;
+		Variables.getReadLock().lock();
 		try {
-			// Acquire read lock
-			Variables.getReadLock().lock();
+			snapshot = Variables.copyVariablesTree();
+		} finally {
+			Variables.getReadLock().unlock();
+		}
 
+		try {
 			synchronized (connectionLock) {
 				try {
 					if (file == null) {
@@ -407,7 +419,7 @@ public class FlatFileStorage extends VariablesStorage {
 						pw.println("#");
 						pw.println("# version: " + Skript.getVersion());
 						pw.println();
-						save(pw, "", Variables.getVariables());
+						save(pw, "", snapshot);
 						pw.println();
 						pw.flush();
 						pw.close();
@@ -425,15 +437,8 @@ public class FlatFileStorage extends VariablesStorage {
 				}
 			}
 		} finally {
-			Variables.getReadLock().unlock();
-			boolean gotWriteLock = Variables.variablesLock.writeLock().tryLock();
-			if (gotWriteLock) { // Only process queue now if it doesn't require us to wait
-				try {
-					Variables.processChangeQueue();
-				} finally {
-					Variables.variablesLock.writeLock().unlock();
-				}
-			}
+			// Drain any changes queued while the file was being written.
+			Variables.tryDrainChangeQueue();
 		}
 	}
 

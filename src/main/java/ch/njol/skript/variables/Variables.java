@@ -664,16 +664,28 @@ public class Variables {
 	 */
 	static void setVariable(String name, @Nullable Object value) {
 		if (variablesLock.writeLock().tryLock()) {
+			List<VariableChange> applied = null;
 			try {
 				if (!changeQueue.isEmpty()) { // Process older, queued changes if available
-					processChangeQueue();
+					applied = applyChangeQueue(DRAIN_BATCH_SIZE);
 				}
-				// Process and save requested change
+				// Process requested change
 				variables.setVariable(name, value);
-				saveVariableChange(name, value);
 			} finally {
 				variablesLock.writeLock().unlock();
 			}
+			// Serialization (Yggdrasil) is too expensive to run while holding the write lock:
+			// every global variable read parks until the lock frees (visible in spark as
+			// Variables.getVariable -> ReadLock.lock -> park, stalling the main thread).
+			// Apply map changes under the lock, serialize for storage after releasing it.
+			// A concurrent writer may serialize a newer value of the same name first and be
+			// overwritten by this older one in storage; the periodic full CSV rewrite
+			// reconciles storage with the live map, so this window is acceptable.
+			if (applied != null) {
+				for (VariableChange change : applied)
+					saveVariableChange(change.name, change.value);
+			}
+			saveVariableChange(name, value);
 		} else {
 			// Couldn't acquire variable write lock, queue the change (blocking here is a bad idea)
 			queueVariableChange(name, value);
@@ -745,22 +757,68 @@ public class Variables {
 	 * then release it.
 	 */
 	static void processChangeQueue() {
-		while (true) { // Run as long as we still have changes
+		for (VariableChange change : applyChangeQueue(Integer.MAX_VALUE))
+			saveVariableChange(change.name, change.value);
+	}
+
+	/**
+	 * How many queued changes a single write lock hold may apply. Bounds how long
+	 * readers (the main thread) can park behind a backlog drain: after a full CSV
+	 * rewrite the queue can hold the entire rewrite window's writes, and applying
+	 * all of them in one hold caused multi-hundred-ms tick spikes.
+	 */
+	private static final int DRAIN_BATCH_SIZE = 10000;
+
+	/**
+	 * Applies up to {@code limit} entries of the variable change queue to the
+	 * variables map, without serializing them for the storages.
+	 * <p>
+	 * Caller must hold the write lock. The returned changes must still be passed to
+	 * {@link #saveVariableChange(String, Object)} by the caller — preferably after
+	 * releasing the lock, so that readers don't park while the backlog serializes.
+	 */
+	static List<VariableChange> applyChangeQueue(int limit) {
+		List<VariableChange> applied = new ArrayList<>();
+		while (applied.size() < limit) { // Run as long as we still have changes
 			VariableChange change = changeQueue.poll();
 			if (change == null)
 				break;
 
 			try {
-				// Set and save variable
 				variables.setVariable(change.name, change.value);
-				saveVariableChange(change.name, change.value);
+				applied.add(change);
 			} finally {
-				// This must run even if saving threw: a leftover index entry would make every
+				// This must run even if applying threw: a leftover index entry would make every
 				// later read of this name return this change's value and shadow the map for good.
 				// Only drop it if it still refers to the change just applied, so that a newer
 				// queued change for the same name stays visible to readers.
 				queuedChanges.remove(change.name, change);
 			}
+		}
+		return applied;
+	}
+
+	/**
+	 * Drains the change queue without blocking readers for the whole backlog:
+	 * repeatedly applies one bounded batch to the variables map under a
+	 * non-blocking write lock, releases the lock so readers can interleave,
+	 * then serializes the batch for the storages. Stops early if the lock is
+	 * contended.
+	 */
+	static void tryDrainChangeQueue() {
+		while (!changeQueue.isEmpty()) {
+			if (!variablesLock.writeLock().tryLock())
+				return;
+			List<VariableChange> applied;
+			try {
+				applied = applyChangeQueue(DRAIN_BATCH_SIZE);
+			} finally {
+				variablesLock.writeLock().unlock();
+			}
+			for (VariableChange change : applied)
+				saveVariableChange(change.name, change.value);
+			if (applied.isEmpty())
+				return;
 		}
 	}
 
@@ -1029,6 +1087,29 @@ public class Variables {
 		// Then we can safely interrupt and stop the thread
 		closed = true;
 		saveThread.interrupt();
+	}
+
+	/**
+	 * Creates a structural deep copy of the global variables tree.
+	 * <p>
+	 * Caller must hold the read lock — but only for the duration of the copy
+	 * (milliseconds), instead of for a whole storage rewrite. Values are shared
+	 * by reference: Skript replaces values on change rather than mutating them
+	 * in place, so the snapshot stays a consistent point-in-time view.
+	 */
+	@SuppressWarnings("unchecked")
+	static TreeMap<String, Object> copyVariablesTree() {
+		return copyTree(variables.treeMap);
+	}
+
+	private static TreeMap<String, Object> copyTree(TreeMap<String, Object> map) {
+		TreeMap<String, Object> copy = new TreeMap<>(map.comparator());
+		for (Entry<String, Object> entry : map.entrySet()) {
+			Object value = entry.getValue();
+			//noinspection unchecked
+			copy.put(entry.getKey(), value instanceof TreeMap ? copyTree((TreeMap<String, Object>) value) : value);
+		}
+		return copy;
 	}
 
 	/**
