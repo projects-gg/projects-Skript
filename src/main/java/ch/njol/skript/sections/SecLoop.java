@@ -79,13 +79,28 @@ public class SecLoop extends LoopSection {
 
 	protected @UnknownNullability Expression<?> expression;
 
-	private final transient Map<Event, Object> current = new WeakHashMap<>();
-	private final transient Map<Event, Iterator<?>> iteratorMap = new WeakHashMap<>();
-	private final transient Map<Event, Object> previous = new WeakHashMap<>();
+	// Synchronized for the same reason as LoopSection#currentLoopCounter: one parsed loop is
+	// shared by every execution of its trigger, and those can overlap on different threads.
+	private final transient Map<Event, Object> current = Collections.synchronizedMap(new WeakHashMap<>());
+	private final transient Map<Event, Iterator<?>> iteratorMap = Collections.synchronizedMap(new WeakHashMap<>());
+	private final transient Map<Event, Object> previous = Collections.synchronizedMap(new WeakHashMap<>());
+
+	/**
+	 * Values pulled off an iterator by {@link #getNext(Event)} that the next {@link #walk(Event)}
+	 * still has to hand out, for iterators that cannot peek without consuming.
+	 * <p>
+	 * Keyed by event like the rest of the loop state: this used to be a single field shared by
+	 * every execution of the loop, so an execution suspended by a {@code wait} would have its
+	 * stashed value handed to whichever execution walked next, giving that one a value from a
+	 * different event and silently skipping one of its own.
+	 * <p>
+	 * Only ever written when {@link #loopPeeking} is set, which is what lets the hot path in
+	 * {@link #walk(Event)} skip this map entirely for the loops that never peek.
+	 */
+	private final transient Map<Event, Object> nextValue = Collections.synchronizedMap(new WeakHashMap<>());
 
 	protected @Nullable TriggerItem actualNext;
 	private boolean guaranteedToLoop;
-	private Object nextValue = null;
 	private boolean loopPeeking;
 	protected boolean iterableSingle;
 	protected boolean keyed;
@@ -156,15 +171,17 @@ public class SecLoop extends LoopSection {
 			}
 		}
 
-		if (iter == null || (!iter.hasNext() && nextValue == null)) {
+		// Only a peeking loop can ever have stashed a value, so every other loop skips the map.
+		Object peeked = loopPeeking ? nextValue.remove(event) : null;
+
+		if (iter == null || (!iter.hasNext() && peeked == null)) {
 			exit(event);
 			debug(event, false);
 			return actualNext;
 		} else {
 			previous.put(event, current.get(event));
-			if (nextValue != null) {
-				this.store(event, nextValue);
-				nextValue = null;
+			if (peeked != null) {
+				this.store(event, peeked);
 			} else if (iter.hasNext()) {
 				this.store(event, iter.next());
 			}
@@ -195,12 +212,22 @@ public class SecLoop extends LoopSection {
 		if (!loopPeeking)
 			return null;
 		Iterator<?> iter = iteratorMap.get(event);
-		if (iter == null || !iter.hasNext())
+		if (iter == null)
+			return null;
+		// Looking twice within one iteration must show the same value, so an already stashed one
+		// is handed back instead of pulling another off the iterator (which would skip a value).
+		// This is checked before hasNext() because a stash is still valid once the iterator is
+		// exhausted: the stashed value is exactly the one that has not been handed out yet.
+		Object stashed = nextValue.get(event);
+		if (stashed != null)
+			return stashed;
+		if (!iter.hasNext())
 			return null;
 		if (iter instanceof PeekingIterator<?> peekingIterator)
 			return peekingIterator.peek();
-		nextValue = iter.next();
-		return nextValue;
+		Object next = iter.next();
+		nextValue.put(event, next);
+		return next;
 	}
 
 	public @Nullable Object getPrevious(Event event) {
@@ -239,7 +266,8 @@ public class SecLoop extends LoopSection {
 		current.remove(event);
 		iteratorMap.remove(event);
 		previous.remove(event);
-		nextValue = null;
+		if (loopPeeking)
+			nextValue.remove(event);
 		super.exit(event);
 	}
 

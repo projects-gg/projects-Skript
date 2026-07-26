@@ -360,6 +360,49 @@ public class Variables {
 	private static final Map<Event, VariablesMap> localVariables = new ConcurrentHashMap<>();
 
 	/**
+	 * Marks local variables as owned by a <i>detached</i> execution flow, i.e. a continuation that
+	 * keeps running on another thread while its event is still being dispatched on the main thread
+	 * (async effects and sections provided by addons).
+	 * <p>
+	 * Such a flow takes the map out of {@link #localVariables} and puts it back from its own
+	 * thread, so the per-trigger cleanup in {@link ch.njol.skript.lang.Trigger#execute(Event)} can
+	 * race with it and wipe the continuation's variables. A map marked here is left alone by that
+	 * cleanup; the flow that took it over is then responsible for removing it.
+	 * <p>
+	 * The mark must be set <b>before</b> the map is handed to another thread and cleared once the
+	 * flow is done with it, otherwise the map stays installed for as long as its event lives.
+	 *
+	 * @param map the local variables, as returned by {@link #removeLocals(Event)} or
+	 *            {@link #copyLocalVariables(Event)}. Doing nothing when {@code null} keeps callers
+	 *            free of null checks: an event with no local variables has nothing to protect.
+	 * @param detached whether the map is owned by a detached flow.
+	 */
+	public static void setLocalVariablesDetached(@Nullable Object map, boolean detached) {
+		if (map != null)
+			((VariablesMap) map).detached = detached;
+	}
+
+	/**
+	 * Removes the local variables of an event, unless they are owned by a detached execution flow
+	 * (see {@link #setLocalVariablesDetached(Object, boolean)}).
+	 * <p>
+	 * This is what triggers use to clean up after themselves: it never removes a map that another
+	 * thread is still executing with, and it never removes a map that replaced the one this call
+	 * observed.
+	 *
+	 * @param event the event.
+	 * @return the removed local variables, or {@code null} if nothing was removed.
+	 */
+	public static @Nullable VariablesMap removeLocalsUnlessDetached(Event event) {
+		VariablesMap map = localVariables.get(event);
+		if (map == null)
+			return null;
+		if (map.detached)
+			return null; // owned by another thread, it cleans up after itself
+		return localVariables.remove(event, map) ? map : null;
+	}
+
+	/**
 	 * Gets the {@link TreeMap} of all global variables.
 	 * <p>
 	 * Remember to lock with {@link #getReadLock()} and to not make any changes!

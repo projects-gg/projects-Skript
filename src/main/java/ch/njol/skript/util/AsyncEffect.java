@@ -30,8 +30,14 @@ public abstract class AsyncEffect extends Effect {
 
 		Object localVars = Variables.removeLocals(e); // Back up local variables
 
-		if (!Skript.getInstance().isEnabled()) // See https://github.com/SkriptLang/Skript/issues/3702
+		if (!Skript.getInstance().isEnabled()) { // See https://github.com/SkriptLang/Skript/issues/3702
+			Variables.setLocalVariables(e, localVars);
 			return null;
+		}
+
+		// The async task below puts the variables back under the same event while the main thread
+		// is still finishing this event. Claim them so that the trigger cleanup does not wipe them.
+		Variables.setLocalVariablesDetached(localVars, true);
 
 		Bukkit.getScheduler().runTaskAsynchronously(Skript.getInstance(), () -> {
 			Delay.addDelayedEvent(e); // Mark this event as delayed
@@ -52,12 +58,14 @@ public abstract class AsyncEffect extends Effect {
 					}
 					
 					TriggerItem.walk(getNext(), e);
-					
+
+					Variables.setLocalVariablesDetached(localVars, false); // Hand ownership back
 					Variables.removeLocals(e); // Clean up local vars, we may be exiting now
-					
+
 					SkriptTimings.stop(timing); // Stop timing if it was even started
 				});
 			} else {
+				Variables.setLocalVariablesDetached(localVars, false); // Hand ownership back
 				Variables.removeLocals(e);
 			}
 		});

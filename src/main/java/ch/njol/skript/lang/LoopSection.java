@@ -2,6 +2,7 @@ package ch.njol.skript.lang;
 
 import org.bukkit.event.Event;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -13,7 +14,19 @@ import java.util.WeakHashMap;
  */
 public abstract class LoopSection extends Section implements SyntaxElement, Debuggable, SectionExitHandler {
 
-	protected final transient Map<Event, Long> currentLoopCounter = new WeakHashMap<>();
+	/**
+	 * Loop state is keyed by event because one parsed loop is shared by every execution of its
+	 * trigger. Those executions are not necessarily sequential: a {@code wait} inside the loop
+	 * suspends one and lets another enter, and an async continuation runs the loop on a pool
+	 * thread entirely, so the map is written concurrently. It must therefore be synchronized —
+	 * concurrent writes to a plain {@link WeakHashMap} can corrupt its table and make a later
+	 * lookup spin forever.
+	 * <p>
+	 * Weak keys are kept: {@link #exit(Event)} only runs when a loop finishes normally, so an
+	 * abandoned loop (a {@code stop}, or an exception) relies on the event being collected.
+	 */
+	protected final transient Map<Event, Long> currentLoopCounter =
+		Collections.synchronizedMap(new WeakHashMap<>());
 
 	/**
 	 * @param event The event where the loop is used to return its loop iterations

@@ -51,7 +51,10 @@ public class SecWhile extends LoopSection {
 	private TriggerItem actualNext;
 
 	private boolean doWhile;
-	private final Set<Event> ranDoWhile = Collections.newSetFromMap(new WeakHashMap<>());
+	// Synchronized for the same reason as LoopSection#currentLoopCounter: one parsed loop is
+	// shared by every execution of its trigger, and those can overlap on different threads.
+	private final Set<Event> ranDoWhile =
+		Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
 	@Override
 	public boolean init(Expression<?>[] exprs,

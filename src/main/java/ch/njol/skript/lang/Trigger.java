@@ -32,8 +32,12 @@ public class Trigger extends TriggerSection {
 	public boolean execute(Event event) {
 		boolean success = TriggerItem.walk(this, event);
 
-		// Clear local variables
-		Variables.removeLocals(event);
+		// Clear local variables.
+		// This must not remove variables that belong to a detached execution flow: an async
+		// effect can hand this event's variables to another thread, which puts them back under
+		// the same event while we are still unwinding here. An unconditional removal races with
+		// that thread and randomly wipes the continuation's local variables.
+		Variables.removeLocalsUnlessDetached(event);
 		/*
 		 * Local variables can be used in delayed effects by backing reference
 		 * of VariablesMap up. Basically:

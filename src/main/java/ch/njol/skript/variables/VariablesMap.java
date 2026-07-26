@@ -166,6 +166,20 @@ final class VariablesMap {
 	final TreeMap<String, Object> treeMap = new TreeMap<>();
 
 	/**
+	 * Whether this map has been handed over to a detached execution flow, i.e. a continuation
+	 * that keeps running on another thread while its event is still being dispatched on the main
+	 * thread (async effects and sections provided by addons).
+	 * <p>
+	 * The flow takes this map out of {@link Variables} and puts it back from its own thread, so
+	 * the per-trigger cleanup in {@link ch.njol.skript.lang.Trigger#execute} can race with it and
+	 * wipe the continuation's variables. While this is set, that cleanup leaves the map alone and
+	 * the flow that took it over removes it once it is done.
+	 *
+	 * @see Variables#setLocalVariablesDetached(Object, boolean)
+	 */
+	volatile boolean detached;
+
+	/**
 	 * Returns the internal value of the requested variable.
 	 * <p>
 	 * <b>Do not modify the returned value!</b>
