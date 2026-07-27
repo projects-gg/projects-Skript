@@ -48,6 +48,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -372,14 +373,25 @@ public class Variables {
 	 * The mark must be set <b>before</b> the map is handed to another thread and cleared once the
 	 * flow is done with it, otherwise the map stays installed for as long as its event lives.
 	 *
+	 * Claims are counted, not flagged: in a chain of continuations one hop's release may land
+	 * after the next hop has already claimed, and it must not strip that newer claim of its
+	 * protection. A release never pushes the count below zero, so an unpaired release cannot mask
+	 * a live claim either.
+	 *
 	 * @param map the local variables, as returned by {@link #removeLocals(Event)} or
 	 *            {@link #copyLocalVariables(Event)}. Doing nothing when {@code null} keeps callers
 	 *            free of null checks: an event with no local variables has nothing to protect.
-	 * @param detached whether the map is owned by a detached flow.
+	 * @param detached {@code true} takes a claim on the map, {@code false} releases one.
 	 */
 	public static void setLocalVariablesDetached(@Nullable Object map, boolean detached) {
-		if (map != null)
-			((VariablesMap) map).detached = detached;
+		if (map == null)
+			return;
+		AtomicInteger claims = ((VariablesMap) map).detachedClaims;
+		if (detached) {
+			claims.incrementAndGet();
+		} else {
+			claims.updateAndGet(count -> Math.max(0, count - 1));
+		}
 	}
 
 	/**
@@ -397,8 +409,8 @@ public class Variables {
 		VariablesMap map = localVariables.get(event);
 		if (map == null)
 			return null;
-		if (map.detached)
-			return null; // owned by another thread, it cleans up after itself
+		if (map.detachedClaims.get() > 0)
+			return null; // owned by another flow, it cleans up after itself
 		return localVariables.remove(event, map) ? map : null;
 	}
 

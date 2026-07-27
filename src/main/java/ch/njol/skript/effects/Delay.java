@@ -90,7 +90,10 @@ public class Delay extends Effect {
 				}
 
 				TriggerItem.walk(next, event);
-				Variables.removeLocals(event); // Clean up local vars, we may be exiting now
+				// Clean up local vars, we may be exiting now. The walk above may however have
+				// handed the variables to a detached continuation (an async effect), which puts
+				// them back under this event from its own thread; those must be left alone.
+				Variables.removeLocalsUnlessDetached(event);
 
 				SkriptTimings.stop(timing); // Stop timing if it was even started
 			}, Math.max(duration.getAs(Timespan.TimePeriod.TICK), 1)); // Minimum delay is one tick, less than it is useless!

@@ -59,14 +59,16 @@ public abstract class AsyncEffect extends Effect {
 					
 					TriggerItem.walk(getNext(), e);
 
-					Variables.setLocalVariablesDetached(localVars, false); // Hand ownership back
-					Variables.removeLocals(e); // Clean up local vars, we may be exiting now
+					Variables.setLocalVariablesDetached(localVars, false); // Release our claim
+					// Clean up local vars, we may be exiting now — unless the walk above handed
+					// them to another detached continuation, which then owns the cleanup.
+					Variables.removeLocalsUnlessDetached(e);
 
 					SkriptTimings.stop(timing); // Stop timing if it was even started
 				});
 			} else {
-				Variables.setLocalVariablesDetached(localVars, false); // Hand ownership back
-				Variables.removeLocals(e);
+				Variables.setLocalVariablesDetached(localVars, false); // Release our claim
+				Variables.removeLocalsUnlessDetached(e);
 			}
 		});
 		return null;

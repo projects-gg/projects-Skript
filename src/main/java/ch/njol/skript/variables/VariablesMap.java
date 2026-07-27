@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A map for storing variables in a sorted and efficient manner.
@@ -166,18 +167,24 @@ final class VariablesMap {
 	final TreeMap<String, Object> treeMap = new TreeMap<>();
 
 	/**
-	 * Whether this map has been handed over to a detached execution flow, i.e. a continuation
-	 * that keeps running on another thread while its event is still being dispatched on the main
-	 * thread (async effects and sections provided by addons).
+	 * The number of detached execution flows that currently claim this map, i.e. continuations
+	 * that keep running on another thread while their event is still being dispatched elsewhere
+	 * (async effects and sections provided by addons).
 	 * <p>
-	 * The flow takes this map out of {@link Variables} and puts it back from its own thread, so
-	 * the per-trigger cleanup in {@link ch.njol.skript.lang.Trigger#execute} can race with it and
-	 * wipe the continuation's variables. While this is set, that cleanup leaves the map alone and
-	 * the flow that took it over removes it once it is done.
+	 * Such a flow takes this map out of {@link Variables} and puts it back from its own thread, so
+	 * generic cleanups — the per-trigger one in {@link ch.njol.skript.lang.Trigger#execute}, or the
+	 * one a {@code wait} runs after resuming — can race with it and wipe the continuation's
+	 * variables. While at least one claim is held, those cleanups leave the map alone and the flow
+	 * that took the map over removes it once it is done.
+	 * <p>
+	 * This is a count rather than a flag because claims overlap in a chain of continuations: hop
+	 * <i>n</i> may release its claim only after hop <i>n&#43;1</i> has already claimed, and with a
+	 * flag that release would strip the newer hop of its protection. Releases only ever cancel the
+	 * releasing flow's own claim, so their order does not matter.
 	 *
 	 * @see Variables#setLocalVariablesDetached(Object, boolean)
 	 */
-	volatile boolean detached;
+	final AtomicInteger detachedClaims = new AtomicInteger();
 
 	/**
 	 * Returns the internal value of the requested variable.
