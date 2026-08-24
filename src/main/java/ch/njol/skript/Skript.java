@@ -372,6 +372,9 @@ public final class Skript extends JavaPlugin implements Listener {
 
 		handleJvmArguments(); // JVM arguments
 
+		// Must happen before any syntax class reads the environment PaperLib detected
+		ModernPaperEnvironment.install();
+
 		version = new Version("" + getDescription().getVersion()); // Skript version
 
 		// Start the updater
