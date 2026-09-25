@@ -9,12 +9,18 @@ import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.util.Kleenean;
 import org.bukkit.Keyed;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.skriptlang.skript.bukkit.tags.SkriptTag;
 import org.skriptlang.skript.bukkit.tags.TagModule;
 import org.skriptlang.skript.registration.SyntaxRegistry;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Name("Is Tagged")
 @Description({
@@ -70,8 +76,9 @@ public class CondIsTagged extends Condition {
 			Class<? extends Keyed> valueClass = values[0].getClass();
 
 			for (Tag<Keyed> tag : tags) {
-				// cursed check to ensure the tag is the same type as the values
-				if (!tag.getValues().iterator().next().getClass().isAssignableFrom(valueClass))
+				// ensure the tag is the same type as the values
+				Class<?> tagValueClass = getValueClass(tag);
+				if (tagValueClass == null || !tagValueClass.isAssignableFrom(valueClass))
 					return false;
 				 if (isTagged(tag, values, !isAny)) {
 					 if (!and)
@@ -82,6 +89,38 @@ public class CondIsTagged extends Condition {
 			 }
 			return and;
 		}, isNegated());
+	}
+
+	/**
+	 * The class of the values of every non-{@link SkriptTag} tag checked so far, keyed by tag class and then tag key.
+	 * Bukkit hands out a new tag object on every lookup and some implementations rebuild their whole value set on
+	 * every {@link Tag#getValues()} call, so the class is resolved once per tag class and key instead of per check.
+	 * Custom Skript tags are skipped: one key may be used by tags of different types, and their value sets are cheap.
+	 */
+	private static final Map<Class<?>, Map<NamespacedKey, Class<?>>> TAG_VALUE_CLASSES = new ConcurrentHashMap<>();
+
+	/**
+	 * @return The class of the values of the given tag, or null if the tag has no values.
+	 */
+	private static @Nullable Class<?> getValueClass(Tag<Keyed> tag) {
+		if (tag instanceof SkriptTag)
+			return getFirstValueClass(tag);
+		Map<NamespacedKey, Class<?>> classesByKey = TAG_VALUE_CLASSES.get(tag.getClass());
+		if (classesByKey == null)
+			classesByKey = TAG_VALUE_CLASSES.computeIfAbsent(tag.getClass(), tagClass -> new ConcurrentHashMap<>());
+		NamespacedKey key = tag.getKey();
+		Class<?> valueClass = classesByKey.get(key);
+		if (valueClass == null) {
+			valueClass = getFirstValueClass(tag);
+			if (valueClass != null)
+				classesByKey.putIfAbsent(key, valueClass);
+		}
+		return valueClass;
+	}
+
+	private static @Nullable Class<?> getFirstValueClass(Tag<Keyed> tag) {
+		Iterator<Keyed> values = tag.getValues().iterator();
+		return values.hasNext() ? values.next().getClass() : null;
 	}
 
 	/**

@@ -18,6 +18,7 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public final class SkriptEventHandler {
@@ -57,22 +58,47 @@ public final class SkriptEventHandler {
 	/**
 	 * A Multimap tracking what Triggers are paired with what Events.
 	 * Each Event effectively maps to an ArrayList of Triggers.
+	 * Only read or modified while holding its own monitor, as events may fire on several threads.
 	 */
 	private static final Multimap<Class<? extends Event>, Trigger> triggers = ArrayListMultimap.create();
 
 	/**
+	 * The resolved result of {@link #getTriggers(Class)} for every event class that has been fired since
+	 * {@link #triggers} last changed. Resolving walks every registered event class, which is far too expensive
+	 * to repeat for every call of a high-frequency event. Cleared whenever {@link #triggers} changes.
+	 */
+	private static final Map<Class<? extends Event>, List<Trigger>> triggerCache = new ConcurrentHashMap<>();
+
+	/**
 	 * A utility method to get all Triggers registered under the provided Event class.
 	 * @param event The event to find pairs from.
-	 * @return A List containing all Triggers registered under the provided Event class.
+	 * @return An unmodifiable List containing all Triggers registered under the provided Event class.
 	 */
 	private static List<Trigger> getTriggers(Class<? extends Event> event) {
+		List<Trigger> cached = triggerCache.get(event);
+		if (cached != null)
+			return cached;
+		synchronized (triggers) {
+			cached = triggerCache.get(event);
+			if (cached == null) {
+				cached = Collections.unmodifiableList(resolveTriggers(event));
+				triggerCache.put(event, cached);
+			}
+			return cached;
+		}
+	}
+
+	/**
+	 * Computes the Triggers registered under the provided Event class. Must be called while holding {@link #triggers}.
+	 */
+	private static List<Trigger> resolveTriggers(Class<? extends Event> event) {
 		HandlerList eventHandlerList = getHandlerList(event);
 		assert eventHandlerList != null; // It had one at some point so this should remain true
 		return triggers.asMap().entrySet().stream()
 				.filter(entry -> entry.getKey().isAssignableFrom(event) && getHandlerList(entry.getKey()) == eventHandlerList)
 				.flatMap(entry -> entry.getValue().stream())
 				.distinct()
-				.collect(Collectors.toList()); // forces evaluation now and prevents us from having to call getTriggers again if very high logging is enabled
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -287,7 +313,10 @@ public final class SkriptEventHandler {
 		if (handlerList == null)
 			return;
 
-		triggers.put(event, trigger);
+		synchronized (triggers) {
+			triggers.put(event, trigger);
+			triggerCache.clear();
+		}
 
 		EventPriority priority = trigger.getEvent().getEventPriority();
 
@@ -302,36 +331,39 @@ public final class SkriptEventHandler {
 	 * @param trigger The Trigger to unregister events for.
 	 */
 	public static void unregisterBukkitEvents(Trigger trigger) {
-		Iterator<Entry<Class<? extends Event>, Trigger>> entryIterator = triggers.entries().iterator();
-		entryLoop: while (entryIterator.hasNext()) {
-			Entry<Class<? extends Event>, Trigger> entry = entryIterator.next();
-			if (entry.getValue() != trigger)
-				continue;
-			Class<? extends Event> event = entry.getKey();
+		synchronized (triggers) {
+			Iterator<Entry<Class<? extends Event>, Trigger>> entryIterator = triggers.entries().iterator();
+			entryLoop: while (entryIterator.hasNext()) {
+				Entry<Class<? extends Event>, Trigger> entry = entryIterator.next();
+				if (entry.getValue() != trigger)
+					continue;
+				Class<? extends Event> event = entry.getKey();
 
-			// Remove the trigger from the map
-			entryIterator.remove();
+				// Remove the trigger from the map
+				entryIterator.remove();
+				triggerCache.clear();
 
-			// check if we can unregister the listener
-			EventPriority priority = trigger.getEvent().getEventPriority();
-			for (Trigger eventTrigger : triggers.get(event)) {
-				if (eventTrigger.getEvent().getEventPriority() == priority)
-					continue entryLoop;
-			}
+				// check if we can unregister the listener
+				EventPriority priority = trigger.getEvent().getEventPriority();
+				for (Trigger eventTrigger : triggers.get(event)) {
+					if (eventTrigger.getEvent().getEventPriority() == priority)
+						continue entryLoop;
+				}
 
-			// We can attempt to unregister this listener
-			HandlerList handlerList = getHandlerList(event);
-			if (handlerList == null)
-				continue;
-			Skript skript = Skript.getInstance();
-			for (RegisteredListener registeredListener : handlerList.getRegisteredListeners()) {
-				Listener listener = registeredListener.getListener();
-				if (
-					registeredListener.getPlugin() == skript
-					&& listener instanceof PriorityListener
-					&& ((PriorityListener) listener).priority == priority
-				) {
-					handlerList.unregister(listener);
+				// We can attempt to unregister this listener
+				HandlerList handlerList = getHandlerList(event);
+				if (handlerList == null)
+					continue;
+				Skript skript = Skript.getInstance();
+				for (RegisteredListener registeredListener : handlerList.getRegisteredListeners()) {
+					Listener listener = registeredListener.getListener();
+					if (
+						registeredListener.getPlugin() == skript
+						&& listener instanceof PriorityListener
+						&& ((PriorityListener) listener).priority == priority
+					) {
+						handlerList.unregister(listener);
+					}
 				}
 			}
 		}
@@ -359,15 +391,17 @@ public final class SkriptEventHandler {
 		try {
 			Method method = getHandlerListMethod(eventClass);
 
-			WeakReference<HandlerList> handlerListReference = handlerListCache.get(method);
-			HandlerList handlerList = handlerListReference != null ? handlerListReference.get() : null;
-			if (handlerList == null) {
-				method.setAccessible(true);
-				handlerList = (HandlerList) method.invoke(null);
-				handlerListCache.put(method, new WeakReference<>(handlerList));
-			}
+			synchronized (handlerListCache) {
+				WeakReference<HandlerList> handlerListReference = handlerListCache.get(method);
+				HandlerList handlerList = handlerListReference != null ? handlerListReference.get() : null;
+				if (handlerList == null) {
+					method.setAccessible(true);
+					handlerList = (HandlerList) method.invoke(null);
+					handlerListCache.put(method, new WeakReference<>(handlerList));
+				}
 
-			return handlerList;
+				return handlerList;
+			}
 		} catch (Exception ex) {
 			//noinspection ThrowableNotThrown
 			Skript.exception(ex, "Failed to get HandlerList for event " + eventClass.getName());
