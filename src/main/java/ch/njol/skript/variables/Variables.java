@@ -48,7 +48,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -357,8 +356,45 @@ public class Variables {
 	/**
 	 * A map storing all local variables,
 	 * indexed by their {@link Event}.
+	 * <p>
+	 * Declared with its concrete type so the hot local variable paths bind to it directly. The
+	 * field name is part of the de-facto API: skript-reflect reads it through reflection.
+	 *
+	 * @see #runWithIsolatedLocals(Event, Object, Runnable)
 	 */
-	private static final Map<Event, VariablesMap> localVariables = new ConcurrentHashMap<>();
+	private static final LocalVariablesStore localVariables = new LocalVariablesStore();
+
+	/**
+	 * Runs {@code action} with {@code map} as the local variables of {@code event}, visible to the
+	 * calling thread only.
+	 * <p>
+	 * This is how a continuation that runs on another thread, or later, while its event may still
+	 * be dispatched to other triggers (async effects and sections provided by addons) must run.
+	 * Putting the variables back under the event with {@link #setLocalVariables(Event, Object)}
+	 * instead swaps out the variables of whichever trigger is walking the same event on the main
+	 * thread at that moment, and the continuation's cleanup then wipes them mid-walk.
+	 * <p>
+	 * Inside {@code action}, every local variable access the calling thread makes for
+	 * {@code event} — reading, setting, {@link #removeLocals(Event)},
+	 * {@link #setLocalVariables(Event, Object)}, {@link #copyLocalVariables(Event)} and the
+	 * trigger cleanup — works on this map; local variables of other events are unaffected. Handing
+	 * the variables on to a further continuation works as usual: {@link #removeLocals(Event)} takes
+	 * them out of this scope. Whatever is left when {@code action} returns is not installed
+	 * anywhere, so no cleanup is needed.
+	 * <p>
+	 * Scopes nest: a scope run inside another one, for the same event or not, shadows it until it
+	 * returns.
+	 *
+	 * @param event the event the continuation runs for.
+	 * @param map the local variables, as returned by {@link #removeLocals(Event)} or
+	 *            {@link #copyLocalVariables(Event)}, or {@code null} to start without any.
+	 * @param action the continuation.
+	 * @return the local variables the event has when {@code action} returns, or {@code null} if it
+	 * 			has none, e.g. because {@code action} handed them to another continuation.
+	 */
+	public static @Nullable Object runWithIsolatedLocals(Event event, @Nullable Object map, Runnable action) {
+		return localVariables.runIsolated(event, (VariablesMap) map, action);
+	}
 
 	/**
 	 * Marks local variables as owned by a <i>detached</i> execution flow, i.e. a continuation that
@@ -377,6 +413,10 @@ public class Variables {
 	 * after the next hop has already claimed, and it must not strip that newer claim of its
 	 * protection. A release never pushes the count below zero, so an unpaired release cannot mask
 	 * a live claim either.
+	 * <p>
+	 * Superseded by {@link #runWithIsolatedLocals(Event, Object, Runnable)}, which also keeps the
+	 * flow from overwriting the variables of triggers still handling the event. Kept for addons
+	 * built against this method.
 	 *
 	 * @param map the local variables, as returned by {@link #removeLocals(Event)} or
 	 *            {@link #copyLocalVariables(Event)}. Doing nothing when {@code null} keeps callers
@@ -386,11 +426,10 @@ public class Variables {
 	public static void setLocalVariablesDetached(@Nullable Object map, boolean detached) {
 		if (map == null)
 			return;
-		AtomicInteger claims = ((VariablesMap) map).detachedClaims;
 		if (detached) {
-			claims.incrementAndGet();
+			((VariablesMap) map).claimDetached();
 		} else {
-			claims.updateAndGet(count -> Math.max(0, count - 1));
+			((VariablesMap) map).releaseDetached();
 		}
 	}
 
@@ -406,12 +445,7 @@ public class Variables {
 	 * @return the removed local variables, or {@code null} if nothing was removed.
 	 */
 	public static @Nullable VariablesMap removeLocalsUnlessDetached(Event event) {
-		VariablesMap map = localVariables.get(event);
-		if (map == null)
-			return null;
-		if (map.detachedClaims.get() > 0)
-			return null; // owned by another flow, it cleans up after itself
-		return localVariables.remove(event, map) ? map : null;
+		return localVariables.removeUnlessDetached(event);
 	}
 
 	/**
