@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  * A map for storing variables in a sorted and efficient manner.
@@ -181,10 +181,38 @@ final class VariablesMap {
 	 * <i>n</i> may release its claim only after hop <i>n&#43;1</i> has already claimed, and with a
 	 * flag that release would strip the newer hop of its protection. Releases only ever cancel the
 	 * releasing flow's own claim, so their order does not matter.
+	 * <p>
+	 * A plain field driven by {@link #DETACHED_CLAIMS} rather than an {@code AtomicInteger}: a map
+	 * is created for every event that sets a local variable, and almost none is ever claimed.
 	 *
 	 * @see Variables#setLocalVariablesDetached(Object, boolean)
 	 */
-	final AtomicInteger detachedClaims = new AtomicInteger();
+	private volatile int detachedClaims;
+
+	private static final AtomicIntegerFieldUpdater<VariablesMap> DETACHED_CLAIMS =
+		AtomicIntegerFieldUpdater.newUpdater(VariablesMap.class, "detachedClaims");
+
+	/**
+	 * Takes a claim for a detached flow, see {@link #detachedClaims}.
+	 */
+	void claimDetached() {
+		DETACHED_CLAIMS.incrementAndGet(this);
+	}
+
+	/**
+	 * Releases a claim taken by {@link #claimDetached()}. Never drops below zero, so an unpaired
+	 * release cannot mask a live claim.
+	 */
+	void releaseDetached() {
+		DETACHED_CLAIMS.updateAndGet(this, count -> Math.max(0, count - 1));
+	}
+
+	/**
+	 * @return whether a detached flow currently claims this map
+	 */
+	boolean isDetached() {
+		return detachedClaims > 0;
+	}
 
 	/**
 	 * Returns the internal value of the requested variable.

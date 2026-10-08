@@ -35,19 +35,15 @@ public abstract class AsyncEffect extends Effect {
 			return null;
 		}
 
-		// The async task below puts the variables back under the same event while the main thread
-		// is still finishing this event. Claim them so that the trigger cleanup does not wipe them.
-		Variables.setLocalVariablesDetached(localVars, true);
-
 		Bukkit.getScheduler().runTaskAsynchronously(Skript.getInstance(), () -> {
 			Delay.addDelayedEvent(e); // Mark this event as delayed
-			// Re-set local variables
-			if (localVars != null)
-				Variables.setLocalVariables(e, localVars);
-			
-			execute(e); // Execute this effect
-			
-			if (getNext() != null) {
+
+			// The main thread may still be dispatching this event to other triggers, so the
+			// variables must not go back under the shared event: bind them to this thread only.
+			Object resultVars = Variables.runWithIsolatedLocals(e, localVars, () -> execute(e));
+
+			TriggerItem next = getNext();
+			if (next != null) {
 				Bukkit.getScheduler().runTask(Skript.getInstance(), () -> { // Walk to next item synchronously
 					Object timing = null;
 					if (SkriptTimings.enabled()) { // getTrigger call is not free, do it only if we must
@@ -56,19 +52,13 @@ public abstract class AsyncEffect extends Effect {
 							timing = SkriptTimings.start(trigger.getDebugLabel());
 						}
 					}
-					
-					TriggerItem.walk(getNext(), e);
 
-					Variables.setLocalVariablesDetached(localVars, false); // Release our claim
-					// Clean up local vars, we may be exiting now — unless the walk above handed
-					// them to another detached continuation, which then owns the cleanup.
-					Variables.removeLocalsUnlessDetached(e);
+					// Whatever the walk leaves behind is dropped with the scope, so no cleanup is
+					// needed; variables handed to a further continuation have left it already.
+					Variables.runWithIsolatedLocals(e, resultVars, () -> TriggerItem.walk(next, e));
 
 					SkriptTimings.stop(timing); // Stop timing if it was even started
 				});
-			} else {
-				Variables.setLocalVariablesDetached(localVars, false); // Release our claim
-				Variables.removeLocalsUnlessDetached(e);
 			}
 		});
 		return null;
