@@ -105,11 +105,17 @@ public class AliasesMap {
 		 * All different aliases that share this material.
 		 */
 		public final List<AliasData> items;
-		
+
+		/**
+		 * Whether any alias of this material (default or not) has a related entity.
+		 * Only ever set to true, so a false value is always safe to act on.
+		 */
+		public boolean hasRelatedEntity;
+
 		public MaterialEntry() {
 			this.items = new ArrayList<>();
 		}
-		
+
 	}
 	
 	/**
@@ -135,6 +141,19 @@ public class AliasesMap {
 		} else {
 			entry.items.add(data);
 		}
+		if (data.getRelatedEntity() != null)
+			entry.hasRelatedEntity = true;
+	}
+
+	/**
+	 * Cheap pre-check for {@link #matchAlias(ItemData)}: if this returns false, no alias
+	 * of the item's material has a related entity, so whatever alias matches, its
+	 * related entity is null.
+	 * @param item Item to check.
+	 * @return Whether an alias of the item's material may have a related entity.
+	 */
+	public boolean mayHaveRelatedEntity(ItemData item) {
+		return getEntry(item).hasRelatedEntity;
 	}
 	
 	/**

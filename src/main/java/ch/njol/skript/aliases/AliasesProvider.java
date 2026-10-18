@@ -219,6 +219,14 @@ public class AliasesProvider {
 		return item;
 	}
 
+	/**
+	 * @return false only if neither this provider nor any parent has an alias with a related
+	 * entity for the item's material, in which case {@link #getRelatedEntity(ItemData)} is null.
+	 */
+	private boolean mayHaveRelatedEntity(ItemData item) {
+		return aliasesMap.mayHaveRelatedEntity(item) || (parent != null && parent.mayHaveRelatedEntity(item));
+	}
+
 	public AliasesMap.@Nullable AliasData getAliasData(ItemData item) {
 		AliasesMap.AliasData data = aliasesMap.matchAlias(item).getData();
 		if (data == null && parent != null) {
@@ -247,6 +255,10 @@ public class AliasesProvider {
 
 	@Nullable
 	public EntityData<?> getRelatedEntity(ItemData item) {
+		// Most materials have no alias with a related entity; skip the (slow) best-match search for them.
+		// This runs for every entity click checked against an item type (e.g. "on right click on chest").
+		if (!mayHaveRelatedEntity(item))
+			return null;
 		AliasesMap.AliasData data = getAliasData(item);
 		if (data != null) {
 			return data.getRelatedEntity();
