@@ -77,8 +77,12 @@ public class EvtPeriodical extends SkriptEvent {
 
 	@Override
 	public void unload() {
+		// A script that disables itself from its own "on load" is unloaded before postLoad scheduled the tasks.
+		if (taskIDs == null)
+			return;
 		for (int taskID : taskIDs)
 			Bukkit.getScheduler().cancelTask(taskID);
+		taskIDs = null;
 	}
 
 	@Override
