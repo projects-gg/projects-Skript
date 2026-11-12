@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -91,7 +92,8 @@ public abstract class EntityData<E extends Entity> implements SyntaxElement, Ygg
 			m_adult = new Adjective(LANGUAGE_NODE + ".age adjectives.adult");
 
 	// must be here to be initialised before 'new SimpleLiteral' is called in the register block below
-	private static final List<EntityDataInfo<EntityData<?>>> infos = new ArrayList<>();
+	// copy-on-write: registered during startup, iterated by every entity data parse
+	private static final List<EntityDataInfo<EntityData<?>>> infos = new CopyOnWriteArrayList<>();
 
 	private static final List<EntityData> ALL_ENTITY_DATAS = new ArrayList<>();
 
@@ -215,10 +217,26 @@ public abstract class EntityData<E extends Entity> implements SyntaxElement, Ygg
 		final @Nullable EntityType entityType;
 		final Class<? extends Entity> entityClass;
 		final Noun[] names;
-		private String[] patterns;
-		private final Map<String, Integer> codeNamePlacements = new HashMap<>();
-		private final Map<Integer, String> matchedPatternToCodeName = new HashMap<>();
-		private final Map<Integer, Integer> matchedPatternToCodeNamePattern = new HashMap<>();
+		/**
+		 * Immutable after construction.
+		 */
+		private final Map<String, Integer> codeNamePlacements;
+		/**
+		 * The language dependent patterns and what each of them maps to.
+		 * Rebuilt on every language change and published as a whole, so a parser on another
+		 * thread never observes a half-built mapping (it used to be three maps that were
+		 * cleared and refilled in place).
+		 */
+		private volatile PatternMapping patternMapping = PatternMapping.EMPTY;
+
+		/**
+		 * @param patterns All patterns of this entity data, in matching order.
+		 * @param codeNames The code name each pattern belongs to.
+		 * @param patternsInCodeName The index of each pattern among the patterns of its code name.
+		 */
+		private record PatternMapping(String[] patterns, String[] codeNames, int[] patternsInCodeName) {
+			static final PatternMapping EMPTY = new PatternMapping(new String[0], new String[0], new int[0]);
+		}
 
 		public EntityDataInfo(Class<T> dataClass, String codeName, String[] codeNames, int defaultName, Class<? extends Entity> entityClass) {
 			this(dataClass, codeName, codeNames, defaultName, EntityUtils.toBukkitEntityType(entityClass), entityClass);
@@ -240,11 +258,13 @@ public abstract class EntityData<E extends Entity> implements SyntaxElement, Ygg
 			this.entityType = entityType;
 			this.entityClass = entityClass;
 			this.names = new Noun[codeNames.length];
+			Map<String, Integer> placements = new HashMap<>();
 			for (int i = 0; i < codeNames.length; i++) {
 				assert codeNames[i] != null;
 				names[i] = new Noun(LANGUAGE_NODE + "." + codeNames[i] + ".name");
-				codeNamePlacements.put(codeNames[i], i);
+				placements.put(codeNames[i], i);
 			}
+			this.codeNamePlacements = Map.copyOf(placements);
 
 			Language.addListener(this, LanguageListenerPriority.LATEST);
 		}
@@ -252,14 +272,14 @@ public abstract class EntityData<E extends Entity> implements SyntaxElement, Ygg
 		@Override
 		public void onLanguageChange() {
 			List<String> allPatterns = new ArrayList<>();
-			matchedPatternToCodeName.clear();
-			matchedPatternToCodeNamePattern.clear();
+			List<String> patternCodeNames = new ArrayList<>();
+			List<Integer> patternsInCodeName = new ArrayList<>();
 			for (String codeName : codeNames) {
 				if (Language.keyExistsDefault(LANGUAGE_NODE + "." + codeName + ".pattern")) {
 					String pattern = Language.get(LANGUAGE_NODE + "." + codeName + ".pattern")
 						.replace("<age>", m_age_pattern.toString());
-					matchedPatternToCodeName.put(allPatterns.size(), codeName);
-					matchedPatternToCodeNamePattern.put(allPatterns.size(), 0);
+					patternCodeNames.add(codeName);
+					patternsInCodeName.add(0);
 					allPatterns.add(pattern);
 				} else if (!Language.keyExistsDefault(LANGUAGE_NODE + "." + codeName + ".patterns.0")) {
 					throw new IllegalStateException("lang section for '" + codeName + "' should contain 'pattern' or a 'patterns' section");
@@ -269,19 +289,24 @@ public abstract class EntityData<E extends Entity> implements SyntaxElement, Ygg
 						String pattern = Language.get(LANGUAGE_NODE + "." + codeName + ".patterns." + multiCount)
 							.replace("<age>", m_age_pattern.toString());
 						// correlates '#init.matchedPattern' to 'codeName'
-						matchedPatternToCodeName.put(allPatterns.size(), codeName);
+						patternCodeNames.add(codeName);
 						// correlates '#init.matchedPattern' to pattern in code name
-						matchedPatternToCodeNamePattern.put(allPatterns.size(), multiCount);
+						patternsInCodeName.add(multiCount);
 						allPatterns.add(pattern);
 						multiCount++;
 					}
 				}
 			}
-			patterns = allPatterns.toArray(String[]::new);
+			patternMapping = new PatternMapping(
+				allPatterns.toArray(String[]::new),
+				patternCodeNames.toArray(String[]::new),
+				patternsInCodeName.stream().mapToInt(Integer::intValue).toArray()
+			);
 		}
 
 		@Override
 		public String[] getPatterns() {
+			String[] patterns = patternMapping.patterns();
 			return Arrays.copyOf(patterns, patterns.length);
 		}
 
@@ -291,7 +316,7 @@ public abstract class EntityData<E extends Entity> implements SyntaxElement, Ygg
 		 * @return The corresponding {@code codeName}.
 		 */
 		public String getCodeNameFromPattern(int matchedPattern) {
-			return matchedPatternToCodeName.get(matchedPattern);
+			return patternMapping.codeNames()[matchedPattern];
 		}
 
 		/**
@@ -300,7 +325,10 @@ public abstract class EntityData<E extends Entity> implements SyntaxElement, Ygg
 		 * @return The placement.
 		 */
 		public int getCodeNamePlacement(String codeName) {
-			return codeNamePlacements.get(codeName);
+			Integer placement = codeNamePlacements.get(codeName);
+			if (placement == null)
+				throw new IllegalArgumentException("'" + codeName + "' is not a code name of " + this.codeName);
+			return placement;
 		}
 
 		/**
@@ -309,7 +337,20 @@ public abstract class EntityData<E extends Entity> implements SyntaxElement, Ygg
 		 * @return The actual placement.
 		 */
 		public int getPatternInCodeName(int matchedPattern) {
-			return matchedPatternToCodeNamePattern.get(matchedPattern);
+			return patternMapping.patternsInCodeName()[matchedPattern];
+		}
+
+		/**
+		 * Resolves a matched pattern against one snapshot of the language dependent mapping.
+		 * @param matchedPattern The placement of the pattern used.
+		 * @return {@code [code name placement, pattern in code name]}.
+		 */
+		int[] resolvePattern(int matchedPattern) {
+			PatternMapping mapping = patternMapping;
+			return new int[] {
+				getCodeNamePlacement(mapping.codeNames()[matchedPattern]),
+				mapping.patternsInCodeName()[matchedPattern]
+			};
 		}
 
 		@Override
@@ -394,9 +435,9 @@ public abstract class EntityData<E extends Entity> implements SyntaxElement, Ygg
 		} else {
 			this.baby = Kleenean.UNKNOWN;
 		}
-		String codeName = info.getCodeNameFromPattern(matchedPattern);
-		int matchedCodeName = info.getCodeNamePlacement(codeName);
-		int patternInCodeName = info.getPatternInCodeName(matchedPattern);
+		int[] resolved = info.resolvePattern(matchedPattern);
+		int matchedCodeName = resolved[0];
+		int patternInCodeName = resolved[1];
 		this.codeNameIndex = matchedCodeName;
 		return init(Arrays.copyOf(exprs, exprs.length, Literal[].class), matchedCodeName, patternInCodeName, parseResult);
 	}

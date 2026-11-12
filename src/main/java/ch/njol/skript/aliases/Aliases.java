@@ -20,6 +20,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.skriptlang.skript.lang.script.Script;
 
@@ -405,34 +406,52 @@ public abstract class Aliases {
 		// Make a call now to force it to load
 		// See https://github.com/PaperMC/Paper/pull/12829
 		ItemUtils.applyComponentData(ItemStack.empty(), "[]");
-		return CompletableFuture.supplyAsync(() -> {
-			try {
-				long start = System.currentTimeMillis();
-				loadInternal();
-				Skript.info("Loaded " + provider.getAliasCount() + " aliases in " + (System.currentTimeMillis() - start) + "ms");
-				return true;
-			} catch (StackOverflowError e) {
-				/*
-				 * Returns true if the underlying installed Java/JVM is 32-bit, false otherwise.
-				 * Note that this depends on a internal system property and these can always be overridden by user using -D JVM options,
-				 * more specifically, this method will return false on non OracleJDK/OpenJDK based JVMs, that don't include bit information in java.vm.name system property
-				 */
-				if (System.getProperty("java.vm.name").contains("32")) {
-					Skript.error("");
-					Skript.error("There was a StackOverflowError that occurred while loading aliases.");
-					Skript.error("As you are currently using 32-bit Java, please update to 64-bit Java to resolve the error.");
-					Skript.error("Please report this issue to our GitHub only if updating to 64-bit Java does not fix the issue.");
-					Skript.error("");
-				} else {
-					Skript.exception(e);
-					Bukkit.getPluginManager().disablePlugin(Skript.getInstance());
-				}
-				return false;
-			} catch (IOException e) {
+		return CompletableFuture.supplyAsync(Aliases::loadAndReport);
+	}
+
+	/**
+	 * Loads aliases from Skript's standard locations on the calling thread.
+	 * Exceptions will be logged, but not thrown.
+	 * <p>
+	 * Skript uses this once during startup, on the main thread, after every addon and hook has registered
+	 * its syntax, entity data and language files. Parsing aliases reads those registries (entity data patterns,
+	 * class infos, language entries), which are not thread safe while they are still being registered, so the
+	 * startup load must not overlap registration.
+	 *
+	 * @return true if the loading was successful, false otherwise.
+	 */
+	@ApiStatus.Internal
+	public static boolean loadBlocking() {
+		return loadAndReport();
+	}
+
+	private static boolean loadAndReport() {
+		try {
+			long start = System.currentTimeMillis();
+			loadInternal();
+			Skript.info("Loaded " + provider.getAliasCount() + " aliases in " + (System.currentTimeMillis() - start) + "ms");
+			return true;
+		} catch (StackOverflowError e) {
+			/*
+			 * Returns true if the underlying installed Java/JVM is 32-bit, false otherwise.
+			 * Note that this depends on a internal system property and these can always be overridden by user using -D JVM options,
+			 * more specifically, this method will return false on non OracleJDK/OpenJDK based JVMs, that don't include bit information in java.vm.name system property
+			 */
+			if (System.getProperty("java.vm.name").contains("32")) {
+				Skript.error("");
+				Skript.error("There was a StackOverflowError that occurred while loading aliases.");
+				Skript.error("As you are currently using 32-bit Java, please update to 64-bit Java to resolve the error.");
+				Skript.error("Please report this issue to our GitHub only if updating to 64-bit Java does not fix the issue.");
+				Skript.error("");
+			} else {
 				Skript.exception(e);
-				return false;
+				Bukkit.getPluginManager().disablePlugin(Skript.getInstance());
 			}
-		});
+			return false;
+		} catch (IOException e) {
+			Skript.exception(e);
+			return false;
+		}
 	}
 
 	/**

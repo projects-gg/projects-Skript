@@ -103,7 +103,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -576,8 +575,7 @@ public final class Skript extends JavaPlugin implements Listener {
 			return;
 		}
 
-		// todo: remove completely 2.11 or 2.12
-		CompletableFuture<Boolean> aliases = Aliases.loadAsync();
+		// Aliases are loaded in the first tick below, once every addon has registered (see there).
 
 		Commands.registerListeners();
 
@@ -619,11 +617,12 @@ public final class Skript extends JavaPlugin implements Listener {
 				}
 				finishedLoadingHooks = true;
 
-				try {
-					aliases.get(); // wait for aliases to load
-				} catch (InterruptedException | ExecutionException e) {
-					exception(e, "Could not load aliases concurrently");
-				}
+				// Load aliases on the main thread, now that all addons have enabled and all hooks are loaded.
+				// They used to load on a background thread started in onEnable, which overlapped the enabling
+				// of every addon: an addon's language files (Language.loadDefault) rebuild every entity data's
+				// pattern mapping and addons register entity data, classes and syntax, none of it thread safe.
+				// Alias parsing reads all of these, so an unlucky interleaving failed the whole alias load.
+				Aliases.loadBlocking();
 
 				if (TestMode.ENABLED) {
 					info("Preparing Skript for testing...");
